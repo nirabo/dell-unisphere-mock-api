@@ -43,10 +43,10 @@ class LUNModel:
             "pool_id": str(lun_dict["pool_id"])  # Ensure pool_id is string
         })
 
-        # Create the LUN instance using LUNInDB first to ensure all fields are properly set
-        new_lun = LUNInDB(**lun_dict)
-        # Then convert to LUN for storage
-        new_lun = LUN.model_validate(new_lun)
+        # Create a LUNInDB first to ensure all fields are properly set
+        lun_in_db = LUNInDB(**lun_dict)
+        # Then convert to LUN
+        new_lun = LUN.model_validate(lun_in_db)
         self.luns[lun_id] = new_lun
         return new_lun
 
@@ -83,7 +83,7 @@ class LUNModel:
         
         # Create new LUN instance using LUNInDB first
         updated_lun = LUNInDB(**updated_lun_dict)
-        # Then convert to LUN for storage
+        # Then convert to LUN
         updated_lun = LUN.model_validate(updated_lun)
         self.luns[lun_id] = updated_lun
         return updated_lun

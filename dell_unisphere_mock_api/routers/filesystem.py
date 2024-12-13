@@ -28,7 +28,7 @@ async def list_filesystems(
     """
     return filesystem_model.list_filesystems()
 
-@router.get("/types/filesystem/instances/{filesystem_id}")
+@router.get("/instances/filesystem/{filesystem_id}")
 async def get_filesystem(
     filesystem_id: str,
     current_user: dict = Depends(get_current_user)

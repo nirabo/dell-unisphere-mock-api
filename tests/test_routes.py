@@ -99,10 +99,8 @@ class TestStorageResourceRoutes:
         
         # Modify host access
         host_access = {
-            "add": [
-                {"host": "host1", "accessMask": "Production"}
-            ],
-            "remove": []
+            "host": "host1",
+            "accessType": "Production"
         }
         response = test_client.post(
             f"/api/types/storageResource/instances/{resource['id']}/action/modifyHostAccess",

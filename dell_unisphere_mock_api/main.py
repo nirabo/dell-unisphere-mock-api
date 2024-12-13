@@ -62,17 +62,17 @@ MOCK_USERS = {
     }
 }
 
-# Configure security
-security = HTTPBearer()
-
-# Include routers
-app.include_router(pool.router, prefix="/api", tags=["Pool"], dependencies=[Depends(get_current_user)])
-app.include_router(lun.router, prefix="/api", tags=["LUN"], dependencies=[Depends(get_current_user)])
+# Configure routers
 app.include_router(storage_resource.router, prefix="/api", tags=["Storage Resource"], dependencies=[Depends(get_current_user)])
 app.include_router(filesystem.router, prefix="/api", tags=["Filesystem"], dependencies=[Depends(get_current_user)])
 app.include_router(nas_server.router, prefix="/api", tags=["NAS Server"], dependencies=[Depends(get_current_user)])
+app.include_router(pool.router, prefix="/api", tags=["Pool"], dependencies=[Depends(get_current_user)])
+app.include_router(lun.router, prefix="/api", tags=["LUN"], dependencies=[Depends(get_current_user)])
 
-@app.post("/api/token", response_model=Token)
+# Configure security
+security = HTTPBearer()
+
+@app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     """
     Get an access token for authentication.

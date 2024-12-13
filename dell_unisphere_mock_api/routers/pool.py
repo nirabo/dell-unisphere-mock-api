@@ -53,7 +53,8 @@ async def delete_pool(pool_id: str, _: dict = Depends(get_current_user)):
 @router.delete("/instances/pool/name:{name}", status_code=204)
 async def delete_pool_by_name(name: str, _: dict = Depends(get_current_user)):
     """Delete a pool by name."""
-    success = pool_controller.delete_pool_by_name(name)
-    if not success:
+    pool = pool_controller.get_pool_by_name(name)
+    if not pool:
         raise HTTPException(status_code=404, detail="Pool not found")
+    pool_controller.delete_pool(pool.id)
     return Response(status_code=204)

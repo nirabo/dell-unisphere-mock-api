@@ -28,15 +28,15 @@ async def list_nas_servers(
     """
     return nas_server_model.list_nas_servers()
 
-@router.get("/types/nasServer/instances/{nas_server_id}")
+@router.get("/instances/nasServer/{nas_id}")
 async def get_nas_server(
-    nas_server_id: str,
+    nas_id: str,
     current_user: dict = Depends(get_current_user)
 ) -> dict:
     """
     Get a specific NAS server instance by ID.
     """
-    nas_server = nas_server_model.get_nas_server(nas_server_id)
+    nas_server = nas_server_model.get_nas_server(nas_id)
     if not nas_server:
         raise HTTPException(status_code=404, detail="NAS server not found")
     return nas_server
