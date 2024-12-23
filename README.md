@@ -10,6 +10,8 @@ A FastAPI-based mock implementation of the Dell EMC Unisphere REST API for testi
 
 [![Tests](https://github.com/YOUR_USERNAME/dell-unisphere-mock-api/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_USERNAME/dell-unisphere-mock-api/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/YOUR_USERNAME/dell-unisphere-mock-api/branch/master/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/dell-unisphere-mock-api)
+[![PyPI version](https://badge.fury.io/py/dell-unisphere-mock-api.svg)](https://badge.fury.io/py/dell-unisphere-mock-api)
+[![Python Version](https://img.shields.io/pypi/pyversions/dell-unisphere-mock-api.svg)](https://pypi.org/project/dell-unisphere-mock-api/)
 
 ## Features
 
@@ -22,30 +24,38 @@ A FastAPI-based mock implementation of the Dell EMC Unisphere REST API for testi
 
 ## Installation
 
-```bash
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-For development:
-```bash
-pip install -r requirements-test.txt
-```
-
-## Running Tests
+### From PyPI
 
 ```bash
-make test
+pip install dell-unisphere-mock-api
 ```
 
-This will:
-- Create a test virtual environment
-- Install test dependencies
-- Run pytest with coverage reporting
+For development features:
+```bash
+pip install "dell-unisphere-mock-api[test]"
+```
+
+### From Source
+
+```bash
+git clone https://github.com/YOUR_USERNAME/dell-unisphere-mock-api.git
+cd dell-unisphere-mock-api
+make venv  # Creates virtual environment and installs package in editable mode
+```
+
+## Usage
+
+### Running the Server
+
+```bash
+# If installed from PyPI
+python -m dell_unisphere_mock_api
+
+# If installed from source
+make run
+```
+
+The server will start at `http://localhost:8000`
 
 ## Development
 
@@ -57,6 +67,16 @@ dell_unisphere_mock_api/
 ├── models/         # Data models
 ├── routers/        # API route handlers
 └── schemas/        # Pydantic schemas
+```
+
+### Common Tasks
+
+```bash
+make help          # Show all available commands
+make test          # Run tests with coverage
+make clean         # Clean all build and test artifacts
+make build         # Build source and wheel package
+make release       # Upload to PyPI (maintainers only)
 ```
 
 ### Testing
@@ -76,6 +96,7 @@ The project is configured with:
 - Automated testing on pull requests and master branch
 - Coverage reporting via Codecov
 - Dependency caching for faster builds
+- Automated PyPI releases on tags
 
 #### GitLab CI
 - Parallel CI pipeline configuration
