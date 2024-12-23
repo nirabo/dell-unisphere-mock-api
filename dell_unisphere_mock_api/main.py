@@ -10,7 +10,8 @@ from dell_unisphere_mock_api.routers import (
     lun,
     pool_unit,
     disk_group,
-    disk
+    disk,
+    auth
 )
 from datetime import timedelta
 from fastapi import status
@@ -76,6 +77,7 @@ async def csrf_middleware(request: Request, call_next):
     return response
 
 # Configure routers
+app.include_router(auth.router, prefix="/api", tags=["Auth"])
 app.include_router(storage_resource.router, prefix="/api", tags=["Storage Resource"], dependencies=[Depends(get_current_user)])
 app.include_router(filesystem.router, prefix="/api", tags=["Filesystem"], dependencies=[Depends(get_current_user)])
 app.include_router(nas_server.router, prefix="/api", tags=["NAS Server"], dependencies=[Depends(get_current_user)])

@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 
-from dell_unisphere_mock_api.schemas.pool import Pool, PoolCreate, PoolUpdate
+from dell_unisphere_mock_api.schemas.pool import Pool, PoolCreate, PoolUpdate, RaidTypeEnum, TierTypeEnum, PoolHealth
 
 
 class PoolModel:
@@ -11,6 +11,26 @@ class PoolModel:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.pools: Dict[str, Pool] = {}
+            
+            # Create a test pool that matches the tutorial example
+            test_pool = Pool(
+                id="pool_1",
+                name="Cinder_Pool",
+                description="",
+                raidType=RaidTypeEnum.RAID5,
+                sizeFree=1975148085248,
+                sizeTotal=2359010787328,
+                sizeUsed=331662901248,
+                sizeSubscribed=1154576531456,
+                poolType=TierTypeEnum.Capacity,
+                health=PoolHealth(
+                    value=5,
+                    descriptionIds=["ALRT_COMPONENT_OK"],
+                    descriptions=["The component is operating normally. No action is required."]
+                )
+            )
+            cls._instance.pools[test_pool.id] = test_pool
+            
         return cls._instance
 
     def create_pool(self, pool: Pool) -> Pool:

@@ -66,7 +66,9 @@ class PoolHealth(BaseModel):
     descriptions: List[str] = Field(default_factory=list, description="List of health status descriptions")
 
 
-class PoolBase(BaseModel):
+class Pool(BaseModel):
+    """Pool model that includes all pool attributes."""
+    id: str = Field(default_factory=lambda: str(uuid4()), description="Unique identifier for the pool")
     name: str = Field(..., description="Name of the pool", min_length=1, max_length=63)
     description: Optional[str] = Field(None, description="Description of the pool", max_length=170)
     health: Optional[PoolHealth] = None
@@ -82,25 +84,27 @@ class PoolBase(BaseModel):
     isFASTCacheEnabled: bool = Field(False, description="Indicates whether FAST Cache is enabled for the pool")
     isFASTVpScheduleEnabled: bool = Field(True, description="Indicates whether scheduled data relocations are enabled")
     isHarvestEnabled: bool = Field(True, description="Indicates whether pool space harvesting is enabled")
+    model_config = ConfigDict(from_attributes=True)
 
 
-class PoolCreate(PoolBase):
-    pass
+class PoolCreate(BaseModel):
+    """Schema for creating a new pool."""
+    name: str = Field(..., description="Name of the pool", min_length=1, max_length=63)
+    description: Optional[str] = Field(None, description="Description of the pool", max_length=170)
+    raidType: RaidTypeEnum = Field(..., description="RAID type of the pool")
+    raidStripeWidth: Optional[RaidStripeWidthEnum] = Field(None, description="RAID stripe width")
+    sizeFree: int = Field(..., description="Size of available space in the pool, in bytes", ge=0)
+    sizeTotal: int = Field(..., description="Total size of the pool, in bytes", ge=0)
+    sizeUsed: int = Field(..., description="Size of used space in the pool, in bytes", ge=0)
+    sizeSubscribed: int = Field(..., description="Total size of space in the pool that is subscribed by all storage resources", ge=0)
+    poolType: TierTypeEnum = Field(..., description="Type of storage tier in the pool")
 
 
 class PoolUpdate(BaseModel):
+    """Schema for updating an existing pool."""
     name: Optional[str] = Field(None, description="New name for the pool", min_length=1, max_length=63)
     description: Optional[str] = Field(None, description="New description for the pool", max_length=170)
     alertThreshold: Optional[int] = Field(None, description="New alert threshold", ge=50, le=84)
     isFASTCacheEnabled: Optional[bool] = Field(None, description="Enable/disable FAST Cache")
     isFASTVpScheduleEnabled: Optional[bool] = Field(None, description="Enable/disable scheduled data relocations")
     isHarvestEnabled: Optional[bool] = Field(None, description="Enable/disable pool space harvesting")
-
-
-class PoolInDB(PoolBase):
-    id: str = Field(default_factory=lambda: str(uuid4()), description="Unique identifier for the pool")
-    model_config = ConfigDict(from_attributes=True)
-
-
-class Pool(PoolInDB):
-    pass

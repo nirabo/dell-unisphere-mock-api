@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
-from typing import List
+from fastapi import APIRouter, HTTPException, Depends, Response, Query
+from typing import List, Optional
+from fastapi.responses import JSONResponse
 
 from dell_unisphere_mock_api.schemas.pool import Pool, PoolCreate, PoolUpdate
 from dell_unisphere_mock_api.controllers.pool_controller import PoolController
@@ -30,10 +31,50 @@ async def get_pool(pool_id: str, _: dict = Depends(get_current_user)) -> Pool:
         raise HTTPException(status_code=404, detail="Pool not found")
     return pool
 
-@router.get("/types/pool/instances", response_model=List[Pool])
-async def list_pools(_: dict = Depends(get_current_user)) -> List[Pool]:
-    """List all pools."""
-    return pool_controller.list_pools()
+@router.get("/types/pool/instances")
+async def list_pools(
+    _: dict = Depends(get_current_user),
+    compact: bool = Query(False),
+    fields: Optional[str] = Query(None),
+    page: Optional[int] = Query(1),
+    per_page: Optional[int] = Query(2000),
+    orderby: Optional[str] = Query(None)
+) -> JSONResponse:
+    """List all pools with filtering and pagination."""
+    pools = pool_controller.list_pools()
+    
+    # Apply sorting if specified
+    if orderby:
+        field, direction = orderby.split(" ") if " " in orderby else (orderby, "asc")
+        reverse = direction.lower() == "desc"
+        pools = sorted(pools, key=lambda x: getattr(x, field), reverse=reverse)
+    
+    # Apply pagination
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    pools = pools[start_idx:end_idx]
+    
+    # Format response according to fields parameter
+    if fields:
+        field_list = fields.split(",")
+        entries = []
+        for pool in pools:
+            content = {}
+            for field in field_list:
+                if hasattr(pool, field):
+                    content[field] = getattr(pool, field)
+            entries.append({"content": content})
+    else:
+        entries = [{"content": pool.model_dump()} for pool in pools]
+    
+    response_data = {
+        "@base": "https://example.com/api/types/pool/instances",  # This should be configured properly
+        "updated": "2024-12-23T12:59:46+02:00",  # Use actual current time
+        "links": [{"rel": "self", "href": f"&page={page}"}],
+        "entries": entries
+    }
+    
+    return JSONResponse(content=response_data)
 
 @router.patch("/instances/pool/{pool_id}", response_model=Pool)
 async def modify_pool(pool_id: str, pool_update: PoolUpdate, _: dict = Depends(get_current_user)) -> Pool:

@@ -26,20 +26,16 @@ $(VENV)/bin/activate:
 	$(PYTHON) -m venv $(VENV)
 	$(VENV_BIN)/pip install --upgrade pip
 
-$(TEST_VENV)/bin/activate:
-	$(PYTHON) -m venv $(TEST_VENV)
-	$(TEST_VENV_BIN)/pip install --upgrade pip
-
-venv: $(VENV)/bin/activate
-
-test-venv: $(TEST_VENV)/bin/activate
+test-venv:
+	@if [ ! -d "$(TEST_VENV)" ]; then \
+		$(PYTHON) -m venv $(TEST_VENV); \
+		$(TEST_VENV_BIN)/pip install --upgrade pip; \
+		$(TEST_VENV_BIN)/pip install -r requirements.txt; \
+		$(TEST_VENV_BIN)/pip install -r requirements-test.txt; \
+	fi
 
 install: venv
 	$(VENV_BIN)/pip install -r requirements.txt
-
-install-test: test-venv
-	$(TEST_VENV_BIN)/pip install -r requirements.txt
-	$(TEST_VENV_BIN)/pip install -r requirements-test.txt
 
 clean: clean-pyc clean-test
 	rm -rf $(VENV)
@@ -89,5 +85,5 @@ status:
 		echo "Application is not running"; \
 	fi
 
-test: install-test
-	$(TEST_VENV_BIN)/pytest -v tests/ --cov=app --cov-report=term-missing
+test: test-venv
+	$(TEST_VENV_BIN)/pytest -v tests/ --cov=dell_unisphere_mock_api --cov-report=term-missing

@@ -66,8 +66,10 @@ def test_list_pools(test_client, sample_pool_data, auth_headers):
     response = test_client.get("/api/types/pool/instances", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
-    assert len(data) > 0
-    assert any(pool["name"] == sample_pool_data["name"] for pool in data)
+    assert "@base" in data
+    assert "entries" in data
+    assert len(data["entries"]) > 0
+    assert any(pool["content"]["name"] == sample_pool_data["name"] for pool in data["entries"])
 
 
 def test_modify_pool(test_client, sample_pool_data, auth_headers):

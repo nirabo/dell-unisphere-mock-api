@@ -74,6 +74,10 @@ def verify_csrf_token(request: Request, method: str) -> None:
     if method not in ["POST", "PATCH", "DELETE"]:
         return
 
+    # Skip CSRF check for the auth endpoint
+    if request.url.path == "/api/auth":
+        return
+
     # Skip CSRF check only for unauthorized requests to non-GET methods
     if not request.headers.get("Authorization"):
         return
