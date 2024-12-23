@@ -70,11 +70,17 @@ async def get_current_user(
     }
 
 def verify_csrf_token(request: Request, method: str) -> None:
-    """Verify CSRF token for POST and DELETE requests."""
-    if method in ["POST", "DELETE"]:
-        token = request.headers.get("EMC-CSRF-TOKEN")
-        if not token:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="EMC-CSRF-TOKEN header is required for POST and DELETE requests"
-            )
+    """Verify CSRF token for POST, PATCH and DELETE requests."""
+    if method not in ["POST", "PATCH", "DELETE"]:
+        return
+
+    # Skip CSRF check only for unauthorized requests to non-GET methods
+    if not request.headers.get("Authorization"):
+        return
+
+    token = request.headers.get("EMC-CSRF-TOKEN")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="EMC-CSRF-TOKEN header is required for POST, PATCH and DELETE requests"
+        )

@@ -21,7 +21,7 @@ class RaidStripeWidthEnum(int, Enum):
     SIXTEEN = 16   # RAID6 14+2
 
 class DiskGroupBase(BaseModel):
-    id: str
+    id: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
     raid_type: RaidTypeEnum
@@ -39,5 +39,7 @@ class DiskGroupUpdate(BaseModel):
     description: Optional[str] = None
 
 class DiskGroup(DiskGroupBase):
+    id: str
+
     class Config:
-        orm_mode = True
+        from_attributes = True

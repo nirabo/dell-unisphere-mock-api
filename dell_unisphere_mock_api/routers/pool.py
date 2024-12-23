@@ -14,18 +14,18 @@ async def create_pool(pool: PoolCreate, _: dict = Depends(get_current_user)) -> 
     """Create a new storage pool."""
     return pool_controller.create_pool(pool)
 
-@router.get("/instances/pool/{pool_id}", response_model=Pool)
-async def get_pool(pool_id: str, _: dict = Depends(get_current_user)) -> Pool:
-    """Get a pool by ID."""
-    pool = pool_controller.get_pool(pool_id)
-    if not pool:
-        raise HTTPException(status_code=404, detail="Pool not found")
-    return pool
-
 @router.get("/instances/pool/name:{name}", response_model=Pool)
 async def get_pool_by_name(name: str, _: dict = Depends(get_current_user)) -> Pool:
     """Get a pool by name."""
     pool = pool_controller.get_pool_by_name(name)
+    if not pool:
+        raise HTTPException(status_code=404, detail="Pool not found")
+    return pool
+
+@router.get("/instances/pool/{pool_id}", response_model=Pool)
+async def get_pool(pool_id: str, _: dict = Depends(get_current_user)) -> Pool:
+    """Get a pool by ID."""
+    pool = pool_controller.get_pool(pool_id)
     if not pool:
         raise HTTPException(status_code=404, detail="Pool not found")
     return pool
@@ -35,7 +35,7 @@ async def list_pools(_: dict = Depends(get_current_user)) -> List[Pool]:
     """List all pools."""
     return pool_controller.list_pools()
 
-@router.post("/instances/pool/{pool_id}/action/modify", response_model=Pool)
+@router.patch("/instances/pool/{pool_id}", response_model=Pool)
 async def modify_pool(pool_id: str, pool_update: PoolUpdate, _: dict = Depends(get_current_user)) -> Pool:
     """Modify a pool."""
     pool = pool_controller.update_pool(pool_id, pool_update)
@@ -43,17 +43,18 @@ async def modify_pool(pool_id: str, pool_update: PoolUpdate, _: dict = Depends(g
         raise HTTPException(status_code=404, detail="Pool not found")
     return pool
 
-@router.delete("/instances/pool/{pool_id}", status_code=204)
-async def delete_pool(pool_id: str, _: dict = Depends(get_current_user)):
-    """Delete a pool."""
-    success = pool_controller.delete_pool(pool_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Pool not found")
-
 @router.delete("/instances/pool/name:{name}", status_code=204)
 async def delete_pool_by_name(name: str, _: dict = Depends(get_current_user)):
     """Delete a pool by name."""
     success = pool_controller.delete_pool_by_name(name)
+    if not success:
+        raise HTTPException(status_code=404, detail="Pool not found")
+    return Response(status_code=204)
+
+@router.delete("/instances/pool/{pool_id}", status_code=204)
+async def delete_pool(pool_id: str, _: dict = Depends(get_current_user)):
+    """Delete a pool."""
+    success = pool_controller.delete_pool(pool_id)
     if not success:
         raise HTTPException(status_code=404, detail="Pool not found")
     return Response(status_code=204)

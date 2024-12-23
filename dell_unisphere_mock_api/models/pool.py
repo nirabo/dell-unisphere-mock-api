@@ -13,15 +13,10 @@ class PoolModel:
             cls._instance.pools: Dict[str, Pool] = {}
         return cls._instance
 
-    def create_pool(self, pool: PoolCreate) -> Pool:
+    def create_pool(self, pool: Pool) -> Pool:
         """Create a new storage pool."""
-        pool_id = str(uuid4())
-        pool_dict = pool.model_dump()
-        pool_dict["id"] = pool_id
-        
-        new_pool = Pool(**pool_dict)
-        self.pools[pool_id] = new_pool
-        return new_pool
+        self.pools[pool.id] = pool
+        return pool
 
     def get_pool(self, pool_id: str) -> Optional[Pool]:
         """Get a pool by ID."""

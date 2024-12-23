@@ -73,14 +73,27 @@ async def test_get_current_user_missing_emc_header(test_user_data, mock_response
     assert exc_info.value.status_code == 401
 
 def test_verify_csrf_token_post_request():
-    # Test POST request without CSRF token
-    request = MockRequest(headers={}, method="POST")
+    # Test POST request without CSRF token but with auth
+    request = MockRequest(
+        headers={"Authorization": "Basic YWRtaW46UGFzc3dvcmQxMjMh"},  # admin:Password123!
+        method="POST"
+    )
     with pytest.raises(HTTPException) as exc_info:
         verify_csrf_token(request, "POST")
     assert exc_info.value.status_code == 403
 
-    # Test POST request with CSRF token
-    request = MockRequest(headers={"EMC-CSRF-TOKEN": "valid-token"}, method="POST")
+    # Test POST request with CSRF token and auth
+    request = MockRequest(
+        headers={
+            "Authorization": "Basic YWRtaW46UGFzc3dvcmQxMjMh",
+            "EMC-CSRF-TOKEN": "valid-token"
+        },
+        method="POST"
+    )
+    verify_csrf_token(request, "POST")  # Should not raise exception
+
+    # Test POST request without auth (should not require CSRF token)
+    request = MockRequest(headers={}, method="POST")
     verify_csrf_token(request, "POST")  # Should not raise exception
 
 def test_verify_csrf_token_get_request():

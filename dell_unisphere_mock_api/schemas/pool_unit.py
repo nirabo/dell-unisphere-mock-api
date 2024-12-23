@@ -15,7 +15,6 @@ class PoolUnitOpStatusEnum(str, Enum):
     OFFLINE = "Offline"
 
 class PoolUnitBase(BaseModel):
-    id: str
     name: Optional[str] = None
     description: Optional[str] = None
     health: PoolUnitOpStatusEnum = PoolUnitOpStatusEnum.OK
@@ -34,5 +33,7 @@ class PoolUnitUpdate(BaseModel):
     description: Optional[str] = None
 
 class PoolUnit(PoolUnitBase):
+    id: str
+    
     class Config:
-        orm_mode = True
+        from_attributes = True

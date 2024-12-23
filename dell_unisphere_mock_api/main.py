@@ -13,6 +13,7 @@ from dell_unisphere_mock_api.routers import (
     disk
 )
 from datetime import timedelta
+from fastapi import status
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -59,10 +60,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Middleware to verify CSRF token for POST and DELETE requests
+# Middleware to verify CSRF token for POST, PATCH and DELETE requests
 @app.middleware("http")
 async def csrf_middleware(request: Request, call_next):
-    verify_csrf_token(request, request.method)
+    try:
+        verify_csrf_token(request, request.method)
+    except HTTPException as e:
+        if e.status_code == status.HTTP_403_FORBIDDEN:
+            return Response(
+                content=str(e.detail),
+                status_code=e.status_code,
+                headers=e.headers
+            )
     response = await call_next(request)
     return response
 

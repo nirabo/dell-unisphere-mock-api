@@ -7,7 +7,12 @@ client = TestClient(app)
 
 def get_auth_headers():
     """Helper function to get authentication headers."""
-    return {"Authorization": "Basic YWRtaW46c2VjcmV0"}  # admin:secret
+    # admin:Password123! in base64
+    return {
+        "Authorization": "Basic YWRtaW46UGFzc3dvcmQxMjMh",
+        "X-EMC-REST-CLIENT": "true",
+        "EMC-CSRF-TOKEN": "test-csrf-token"
+    }
 
 def test_create_pool_unit():
     """Test creating a new pool unit."""

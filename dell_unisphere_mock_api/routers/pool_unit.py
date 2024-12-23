@@ -10,7 +10,7 @@ pool_unit_model = PoolUnitModel()
 @router.post("/types/poolUnit/instances", response_model=PoolUnit, status_code=status.HTTP_201_CREATED)
 async def create_pool_unit(pool_unit: PoolUnitCreate, current_user: dict = Depends(get_current_user)):
     """Create a new pool unit."""
-    return pool_unit_model.create(pool_unit.dict())
+    return pool_unit_model.create(pool_unit.model_dump())
 
 @router.get("/types/poolUnit/instances", response_model=List[PoolUnit])
 async def list_pool_units(current_user: dict = Depends(get_current_user)):
@@ -28,7 +28,7 @@ async def get_pool_unit(pool_unit_id: str, current_user: dict = Depends(get_curr
 @router.patch("/types/poolUnit/instances/{pool_unit_id}", response_model=PoolUnit)
 async def update_pool_unit(pool_unit_id: str, pool_unit: PoolUnitUpdate, current_user: dict = Depends(get_current_user)):
     """Update a pool unit."""
-    updated_pool_unit = pool_unit_model.update(pool_unit_id, pool_unit.dict(exclude_unset=True))
+    updated_pool_unit = pool_unit_model.update(pool_unit_id, pool_unit.model_dump(exclude_unset=True))
     if not updated_pool_unit:
         raise HTTPException(status_code=404, detail="Pool unit not found")
     return updated_pool_unit

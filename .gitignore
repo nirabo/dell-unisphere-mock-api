@@ -7,7 +7,7 @@ __pycache__/
 *.so
 
 # Test Results
-test.results.*.txt
+# test.results.*.txt
 
 # Distribution / packaging
 dist/
