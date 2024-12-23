@@ -1,9 +1,9 @@
 # Dell Unisphere Mock API
 
-> **IMPORTANT DISCLAIMER**  
-> This codebase is entirely generated using artificial intelligence.  
-> Users shall use it at their own risk.  
-> The authors make no warranties about the completeness, reliability, and accuracy of this code.  
+> **IMPORTANT DISCLAIMER**
+> This codebase is entirely generated using artificial intelligence.
+> Users shall use it at their own risk.
+> The authors make no warranties about the completeness, reliability, and accuracy of this code.
 > Any action you take upon this code is strictly at your own risk.
 
 A FastAPI-based mock implementation of the Dell EMC Unisphere REST API for testing and development purposes.
@@ -11,7 +11,9 @@ A FastAPI-based mock implementation of the Dell EMC Unisphere REST API for testi
 [![Tests](https://github.com/YOUR_USERNAME/dell-unisphere-mock-api/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_USERNAME/dell-unisphere-mock-api/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/YOUR_USERNAME/dell-unisphere-mock-api/branch/master/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/dell-unisphere-mock-api)
 [![PyPI version](https://badge.fury.io/py/dell-unisphere-mock-api.svg)](https://badge.fury.io/py/dell-unisphere-mock-api)
-[![Python Version](https://img.shields.io/pypi/pyversions/dell-unisphere-mock-api.svg)](https://pypi.org/project/dell-unisphere-mock-api/)
+[![Python Version](https://img.shields.io/pypi/pyversions/dell-unisphere-mock-api.svg)](https://pypi.org/project/dell-unisphere-mock-api)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 ## Features
 
@@ -21,6 +23,7 @@ A FastAPI-based mock implementation of the Dell EMC Unisphere REST API for testi
 - Storage resource management (pools, LUNs, filesystems, etc.)
 - Pagination and sorting support
 - Based on FastAPI for modern async API development
+- Enforced code quality with pre-commit hooks
 
 ## Installation
 
@@ -32,7 +35,7 @@ pip install dell-unisphere-mock-api
 
 For development features:
 ```bash
-pip install "dell-unisphere-mock-api[test]"
+pip install "dell-unisphere-mock-api[test,dev]"
 ```
 
 ### From Source
@@ -40,7 +43,7 @@ pip install "dell-unisphere-mock-api[test]"
 ```bash
 git clone https://github.com/YOUR_USERNAME/dell-unisphere-mock-api.git
 cd dell-unisphere-mock-api
-make venv  # Creates virtual environment and installs package in editable mode
+make venv  # Creates virtual environment and installs package in editable mode with dev tools
 ```
 
 ## Usage
@@ -69,14 +72,49 @@ dell_unisphere_mock_api/
 └── schemas/        # Pydantic schemas
 ```
 
+### Code Quality Tools
+
+The project uses several tools to maintain code quality:
+
+- **Black**: Code formatting
+- **isort**: Import sorting
+- **Flake8**: Style guide enforcement
+- **MyPy**: Static type checking
+- **Bandit**: Security checks
+- **pre-commit**: Automated checks before commits
+
+These tools are automatically installed when you run `make venv` and set up as pre-commit hooks.
+
 ### Common Tasks
 
 ```bash
 make help          # Show all available commands
 make test          # Run tests with coverage
+make lint          # Run all linters
+make format        # Format code with black and isort
+make typecheck     # Run type checking
+make security      # Run security checks
 make clean         # Clean all build and test artifacts
 make build         # Build source and wheel package
 make release       # Upload to PyPI (maintainers only)
+```
+
+### Pre-commit Hooks
+
+The project uses pre-commit hooks to ensure code quality. They are automatically installed when you run `make venv`. The hooks include:
+
+- Trailing whitespace removal
+- End-of-file fixer
+- YAML/TOML syntax checking
+- Code formatting (black)
+- Import sorting (isort)
+- Style guide checking (flake8)
+- Type checking (mypy)
+- Security checks (bandit)
+
+To manually run all checks:
+```bash
+make lint
 ```
 
 ### Testing
@@ -97,12 +135,14 @@ The project is configured with:
 - Coverage reporting via Codecov
 - Dependency caching for faster builds
 - Automated PyPI releases on tags
+- Code quality checks using pre-commit
 
 #### GitLab CI
 - Parallel CI pipeline configuration
 - Built-in coverage reporting
 - Caching of pip packages and virtualenv
 - Runs on merge requests and master branch
+- Code quality checks using pre-commit
 
 ## API Documentation
 
@@ -114,9 +154,11 @@ When running locally, API documentation is available at:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Install development dependencies (`make venv`)
+4. Make your changes (hooks will ensure code quality)
+5. Commit your changes (`git commit -m 'Add some amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ## License
 

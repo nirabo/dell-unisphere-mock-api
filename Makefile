@@ -56,7 +56,8 @@ clean-test: ## remove test and coverage artifacts
 venv: ## create virtual environment
 	test -d $(VENV) || $(PYTHON) -m venv $(VENV)
 	$(VENV_BIN)/pip install --upgrade pip
-	$(VENV_BIN)/pip install -e ".[test]"
+	$(VENV_BIN)/pip install -e ".[test,dev]"
+	$(VENV_BIN)/pre-commit install
 
 test-venv: ## create test virtual environment
 	test -d $(TEST_VENV) || $(PYTHON) -m venv $(TEST_VENV)
@@ -65,6 +66,19 @@ test-venv: ## create test virtual environment
 
 test: test-venv ## run tests with coverage reporting
 	$(TEST_VENV_BIN)/pytest -v tests/ --cov=dell_unisphere_mock_api --cov-report=term-missing --cov-report=xml:coverage.xml
+
+lint: venv ## run all linters
+	$(VENV_BIN)/pre-commit run --all-files
+
+format: venv ## format code with black and isort
+	$(VENV_BIN)/black .
+	$(VENV_BIN)/isort .
+
+typecheck: venv ## run mypy type checking
+	$(VENV_BIN)/mypy dell_unisphere_mock_api tests
+
+security: venv ## run security checks
+	$(VENV_BIN)/bandit -r dell_unisphere_mock_api
 
 build: clean ## build source and wheel package
 	$(PYTHON) -m pip install --upgrade build
