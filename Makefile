@@ -40,6 +40,11 @@ install: venv
 clean: clean-pyc clean-test
 	rm -rf $(VENV)
 	rm -rf $(TEST_VENV)
+	rm -rf .pytest_cache
+	rm -rf .coverage
+	rm -rf coverage.xml
+	rm -rf .venv*
+	find . -type d -name "__pycache__" -exec rm -rf {} +
 	rm -f $(PID_FILE)
 
 clean-pyc:
@@ -86,4 +91,4 @@ status:
 	fi
 
 test: test-venv
-	$(TEST_VENV_BIN)/pytest -v tests/ --cov=dell_unisphere_mock_api --cov-report=term-missing
+	$(TEST_VENV_BIN)/pytest -v tests/ --cov=dell_unisphere_mock_api --cov-report=term-missing --cov-report=xml:coverage.xml
