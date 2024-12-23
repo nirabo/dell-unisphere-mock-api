@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -99,8 +99,8 @@ class PoolUpdate(BaseModel):
 
 class PoolInDB(PoolBase):
     id: str = Field(default_factory=lambda: str(uuid4()), description="Unique identifier for the pool")
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Pool(PoolInDB):
-    class Config:
-        from_attributes = True
+    pass

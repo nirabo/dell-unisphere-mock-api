@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from enum import Enum
 from datetime import datetime
@@ -51,3 +51,4 @@ class FilesystemResponse(FilesystemBase):
     nfsShares: List[str] = Field([], description="List of NFS shares on this filesystem")
     created: datetime = Field(..., description="Creation timestamp")
     modified: datetime = Field(..., description="Last modification timestamp")
+    model_config = ConfigDict(from_attributes=True)

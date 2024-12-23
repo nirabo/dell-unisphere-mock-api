@@ -11,7 +11,7 @@ disk_model = DiskModel()
 async def create_disk(disk: DiskCreate, current_user: dict = Depends(get_current_user)):
     """Create a new disk."""
     # Convert pydantic model to dict
-    disk_data = disk.dict()
+    disk_data = disk.model_dump()
     disk_data["health_status"] = "OK"  # Set default health status
     
     # Validate disk type
@@ -42,7 +42,7 @@ async def get_disk(disk_id: str, current_user: dict = Depends(get_current_user))
 @router.patch("/types/disk/instances/{disk_id}", response_model=Disk)
 async def update_disk(disk_id: str, disk: DiskUpdate, current_user: dict = Depends(get_current_user)):
     """Update a disk."""
-    updated_disk = disk_model.update(disk_id, disk.dict(exclude_unset=True))
+    updated_disk = disk_model.update(disk_id, disk.model_dump(exclude_unset=True))
     if not updated_disk:
         raise HTTPException(status_code=404, detail="Disk not found")
     return Disk(**updated_disk)

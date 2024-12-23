@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from enum import Enum
 
@@ -41,3 +41,4 @@ class NasServerResponse(NasServerBase):
     protocols: List[NasServerProtocolEnum] = Field(..., description="List of protocols enabled on the NAS server")
     fileInterfaces: List[str] = Field([], description="List of file interfaces associated with the NAS server")
     fileSystemCount: int = Field(0, description="Number of file systems hosted by the NAS server")
+    model_config = ConfigDict(from_attributes=True)

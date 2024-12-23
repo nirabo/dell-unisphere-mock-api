@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 
 class PoolUnitTypeEnum(str, Enum):
@@ -34,6 +34,4 @@ class PoolUnitUpdate(BaseModel):
 
 class PoolUnit(PoolUnitBase):
     id: str
-    
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

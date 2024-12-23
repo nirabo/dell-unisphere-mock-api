@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 
 class RaidTypeEnum(str, Enum):
@@ -40,6 +40,4 @@ class DiskGroupUpdate(BaseModel):
 
 class DiskGroup(DiskGroupBase):
     id: str
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

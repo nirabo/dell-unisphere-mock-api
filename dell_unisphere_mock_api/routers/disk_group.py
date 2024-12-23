@@ -20,7 +20,7 @@ async def create_disk_group(disk_group: DiskGroupCreate, current_user: dict = De
             status_code=400,
             detail="Invalid RAID configuration for the given stripe width and number of disks"
         )
-    return disk_group_model.create(disk_group.dict())
+    return disk_group_model.create(disk_group.model_dump())
 
 @router.get("/types/diskGroup/instances", response_model=List[DiskGroup])
 async def list_disk_groups(current_user: dict = Depends(get_current_user)):
@@ -38,7 +38,7 @@ async def get_disk_group(disk_group_id: str, current_user: dict = Depends(get_cu
 @router.patch("/types/diskGroup/instances/{disk_group_id}", response_model=DiskGroup)
 async def update_disk_group(disk_group_id: str, disk_group: DiskGroupUpdate, current_user: dict = Depends(get_current_user)):
     """Update a disk group."""
-    updated_disk_group = disk_group_model.update(disk_group_id, disk_group.dict(exclude_unset=True))
+    updated_disk_group = disk_group_model.update(disk_group_id, disk_group.model_dump(exclude_unset=True))
     if not updated_disk_group:
         raise HTTPException(status_code=404, detail="Disk group not found")
     return updated_disk_group

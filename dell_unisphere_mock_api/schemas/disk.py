@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 
 class DiskTypeEnum(str, Enum):
@@ -37,6 +37,4 @@ class DiskUpdate(BaseModel):
 
 class Disk(DiskBase):
     id: str
-    
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 from uuid import uuid4
 
@@ -71,9 +71,9 @@ class LUNInDB(LUNBase):
 
 
 class LUN(LUNInDB):
-    model_config = {
-        "from_attributes": True,
-        "json_schema_extra": {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "name": "sample_lun",
@@ -93,4 +93,4 @@ class LUN(LUNInDB):
                 }
             }
         }
-    }
+    )
