@@ -59,3 +59,10 @@ class PoolModel:
             del self.pools[pool_id]
             return True
         return False
+
+    def delete_pool_by_name(self, name: str) -> bool:
+        """Delete a pool by name."""
+        pool = self.get_pool_by_name(name)
+        if pool:
+            return self.delete_pool(pool.id)
+        return False

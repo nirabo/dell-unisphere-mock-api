@@ -71,4 +71,26 @@ class LUNInDB(LUNBase):
 
 
 class LUN(LUNInDB):
-    model_config = {"from_attributes": True}
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra": {
+            "example": {
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "name": "sample_lun",
+                "description": "Sample LUN description",
+                "pool_id": "pool-123",
+                "size": 1073741824,  # 1GB
+                "lunType": "GenericStorage",
+                "tieringPolicy": "Autotier",
+                "isCompressionEnabled": False,
+                "isDataReductionEnabled": False,
+                "isThinEnabled": True,
+                "hostAccess": [],
+                "health": {
+                    "value": 5,
+                    "descriptionIds": ["ALRT_COMPONENT_OK"],
+                    "descriptions": ["The component is operating normally."]
+                }
+            }
+        }
+    }

@@ -30,24 +30,17 @@ class LUNModel:
 
     def create_lun(self, lun_create: LUNCreate) -> LUN:
         """Create a new LUN."""
-        lun_id = str(uuid4())
-        
-        # Create the LUN with default values
         lun_dict = lun_create.model_dump()
-        lun_dict.update({
-            "id": lun_id,
-            "wwn": self._generate_wwn(),
-            "health": self._create_default_health(),
-            "currentNode": lun_dict.get("defaultNode", 0),
-            "sizeAllocated": 0,  # Initially no space allocated for thin provisioning
-            "pool_id": str(lun_dict["pool_id"])  # Ensure pool_id is string
-        })
+        lun_dict["pool_id"] = str(lun_dict["pool_id"])  # Ensure pool_id is string
+        lun_dict["wwn"] = self._generate_wwn()
+        lun_dict["health"] = self._create_default_health()
+        lun_dict["currentNode"] = lun_dict.get("defaultNode", 0)
+        lun_dict["sizeAllocated"] = 0  # Initially no space allocated for thin provisioning
+        lun_dict["id"] = str(uuid4())  # Explicitly set ID
 
-        # Create a LUNInDB first to ensure all fields are properly set
-        lun_in_db = LUNInDB(**lun_dict)
-        # Then convert to LUN
-        new_lun = LUN.model_validate(lun_in_db)
-        self.luns[lun_id] = new_lun
+        # Create LUN instance
+        new_lun = LUN(**lun_dict)
+        self.luns[new_lun.id] = new_lun
         return new_lun
 
     def get_lun(self, lun_id: str) -> Optional[LUN]:
@@ -81,10 +74,8 @@ class LUNModel:
         updated_lun_dict = current_lun.model_dump()
         updated_lun_dict.update(update_data)
         
-        # Create new LUN instance using LUNInDB first
-        updated_lun = LUNInDB(**updated_lun_dict)
-        # Then convert to LUN
-        updated_lun = LUN.model_validate(updated_lun)
+        # Create new LUN instance
+        updated_lun = LUN(**updated_lun_dict)
         self.luns[lun_id] = updated_lun
         return updated_lun
 
@@ -93,4 +84,11 @@ class LUNModel:
         if lun_id in self.luns:
             del self.luns[lun_id]
             return True
+        return False
+
+    def delete_lun_by_name(self, name: str) -> bool:
+        """Delete a LUN by name."""
+        lun = self.get_lun_by_name(name)
+        if lun:
+            return self.delete_lun(lun.id)
         return False

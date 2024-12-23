@@ -13,7 +13,11 @@ async def create_storage_resource(
 ) -> dict:
     """Create a new storage resource instance."""
     if not current_user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to create storage resources")
     
