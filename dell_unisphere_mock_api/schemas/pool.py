@@ -1,7 +1,8 @@
-from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
+from typing import List, Optional
 from uuid import UUID, uuid4
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RaidTypeEnum(str, Enum):
@@ -40,7 +41,7 @@ class TierTypeEnum(str, Enum):
 
 
 class FastCacheStateEnum(str, Enum):
-    Enabled = "Enabled" 
+    Enabled = "Enabled"
     Disabled = "Disabled"
     Mixed = "Mixed"
 
@@ -68,7 +69,11 @@ class PoolHealth(BaseModel):
 
 class Pool(BaseModel):
     """Pool model that includes all pool attributes."""
-    id: str = Field(default_factory=lambda: str(uuid4()), description="Unique identifier for the pool")
+
+    id: str = Field(
+        default_factory=lambda: str(uuid4()),
+        description="Unique identifier for the pool",
+    )
     name: str = Field(..., description="Name of the pool", min_length=1, max_length=63)
     description: Optional[str] = Field(None, description="Description of the pool", max_length=170)
     health: Optional[PoolHealth] = None
@@ -77,8 +82,17 @@ class Pool(BaseModel):
     sizeFree: int = Field(..., description="Size of available space in the pool, in bytes", ge=0)
     sizeTotal: int = Field(..., description="Total size of the pool, in bytes", ge=0)
     sizeUsed: int = Field(..., description="Size of used space in the pool, in bytes", ge=0)
-    sizeSubscribed: int = Field(..., description="Total size of space in the pool that is subscribed by all storage resources", ge=0)
-    alertThreshold: int = Field(80, description="Threshold at which the system will generate alerts about the free space in the pool", ge=50, le=84)
+    sizeSubscribed: int = Field(
+        ...,
+        description="Total size of space in the pool that is subscribed by all storage resources",
+        ge=0,
+    )
+    alertThreshold: int = Field(
+        80,
+        description="Threshold at which the system will generate alerts about the free space in the pool",
+        ge=50,
+        le=84,
+    )
     poolFastVP: bool = Field(True, description="Indicates whether thin provisioning is enabled for the pool")
     poolType: TierTypeEnum = Field(..., description="Type of storage tier in the pool")
     isFASTCacheEnabled: bool = Field(False, description="Indicates whether FAST Cache is enabled for the pool")
@@ -89,6 +103,7 @@ class Pool(BaseModel):
 
 class PoolCreate(BaseModel):
     """Schema for creating a new pool."""
+
     name: str = Field(..., description="Name of the pool", min_length=1, max_length=63)
     description: Optional[str] = Field(None, description="Description of the pool", max_length=170)
     raidType: RaidTypeEnum = Field(..., description="RAID type of the pool")
@@ -96,12 +111,17 @@ class PoolCreate(BaseModel):
     sizeFree: int = Field(..., description="Size of available space in the pool, in bytes", ge=0)
     sizeTotal: int = Field(..., description="Total size of the pool, in bytes", ge=0)
     sizeUsed: int = Field(..., description="Size of used space in the pool, in bytes", ge=0)
-    sizeSubscribed: int = Field(..., description="Total size of space in the pool that is subscribed by all storage resources", ge=0)
+    sizeSubscribed: int = Field(
+        ...,
+        description="Total size of space in the pool that is subscribed by all storage resources",
+        ge=0,
+    )
     poolType: TierTypeEnum = Field(..., description="Type of storage tier in the pool")
 
 
 class PoolUpdate(BaseModel):
     """Schema for updating an existing pool."""
+
     name: Optional[str] = Field(None, description="New name for the pool", min_length=1, max_length=63)
     description: Optional[str] = Field(None, description="New description for the pool", max_length=170)
     alertThreshold: Optional[int] = Field(None, description="New alert threshold", ge=50, le=84)

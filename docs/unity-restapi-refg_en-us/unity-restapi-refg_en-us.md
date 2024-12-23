@@ -6075,7 +6075,7 @@ Query a specific iscsiSettings instance
 
 #### Modify ISCSI settings.
 
-For ASCII secret type, the secret must be 12 to 16 characters long and accepts any ASCII character. For Binary secret type, the secret is 24 to 32 characters long and accepts all hexadecimal characters. 
+For ASCII secret type, the secret must be 12 to 16 characters long and accepts any ASCII character. For Binary secret type, the secret is 24 to 32 characters long and accepts all hexadecimal characters.
 
 ### Username must be alphanumeric.
 
@@ -6815,7 +6815,7 @@ Create a NAS server
 
 ### **Delete operation**
 
-Delete a nasServer instance. This deletes the nasServer and its associated resources. Pre-requirements: Before deleting a NAS server, ensure that there are no file systems or VMware datastores associated with it. Otherwise an error will be returned. 
+Delete a nasServer instance. This deletes the nasServer and its associated resources. Pre-requirements: Before deleting a NAS server, ensure that there are no file systems or VMware datastores associated with it. Otherwise an error will be returned.
 
 | Header | Accept: application/json |
 | --- | --- |
@@ -17982,7 +17982,7 @@ Attributes
 
 # **fcPort**
 
-Fibre Channel (FC) front end port settings. Applies if the FC protocol is supported on the system and the corresponding license is installed. 
+Fibre Channel (FC) front end port settings. Applies if the FC protocol is supported on the system and the corresponding license is installed.
 
 #### **Supported operations**
 
@@ -23947,7 +23947,7 @@ POST /api/instances/esrsParam/0/action/modify { "enabled" : "true", "isCentraliz
 
 This example disconnects the storage system from the current ESRS VE appliance and reconnects it to a new one.
 
-POST /api/instances/esrsParam/0/action/modify { "enabled" : "true", "isCentralized" : "true", "esrsVeAddress" : "myveserver.acme.com:2135" } 
+POST /api/instances/esrsParam/0/action/modify { "enabled" : "true", "isCentralized" : "true", "esrsVeAddress" : "myveserver.acme.com:2135" }
 
 ## **Disabling Centralized Remote Support**
 
@@ -28743,7 +28743,7 @@ Collection query , Instance query
 
 Domain Name System (DNS) settings.
 
-A Domain Name System (DNS) is a hierarchical system responsible for converting domain names to their corresponding IP addresses. The system uses DNS services to resolve network names and IP addresses for the network services it needs (for example, for NTP and SMTP servers), and to obtain IP addresses for hosts addressed by network names rather than IP addresses. 
+A Domain Name System (DNS) is a hierarchical system responsible for converting domain names to their corresponding IP addresses. The system uses DNS services to resolve network names and IP addresses for the network services it needs (for example, for NTP and SMTP servers), and to obtain IP addresses for hosts addressed by network names rather than IP addresses.
 
 During the initial system configuration process you must specify the network address of at least one DNS server for resolving hostnames to IP addresses. Later, you can add, delete, or change DNS server settings.
 
@@ -32056,7 +32056,7 @@ Information about the File Transfer Protocol (FTP) and Secure File Transfer Prot
 
 You can configure one FTP server and one SFTP server per NAS server. File Transfer Protocol (FTP) is a standard network protocol used to transfer files from one host to another host over a TCP-based network, such as the Internet. For secure transmission that encrypts the username, password, and content, FTP is secured with SSH (SFTP).
 
-You can activate an FTP server and SFTP server independently on each NAS server. The FTP and SFTP clients are authenticated using credentials defined on a Unix name server (such as an NIS server or a LDAP server) or a Windows domain. Windows user names need to be entered using the 'username@domain' or 'domain\\username' formats. Each FTP and SFTP must have a home directory defined in the name server that must be accessible on the NAS server. FTP allows also clients to connect as anonymous users. 
+You can activate an FTP server and SFTP server independently on each NAS server. The FTP and SFTP clients are authenticated using credentials defined on a Unix name server (such as an NIS server or a LDAP server) or a Windows domain. Windows user names need to be entered using the 'username@domain' or 'domain\\username' formats. Each FTP and SFTP must have a home directory defined in the name server that must be accessible on the NAS server. FTP allows also clients to connect as anonymous users.
 
 ### **Supported operations**
 
@@ -36909,7 +36909,7 @@ An example to query real-time information of CPU busy and idle ticks:
   ]
 }
 ```
-The metricRealTimeQuery resource will be deleted automatically when expiration is reached, or you can manually delete it by running DELETE /api/instances/metricRealTimeQuery/<id>. 1, To delete the query just created in the first step, run DELETE /api/instances/metricRealTimeQuery/37 
+The metricRealTimeQuery resource will be deleted automatically when expiration is reached, or you can manually delete it by running DELETE /api/instances/metricRealTimeQuery/<id>. 1, To delete the query just created in the first step, run DELETE /api/instances/metricRealTimeQuery/37
 
 ### @docstatus Reviewed
 
@@ -49051,4 +49051,3 @@ lunParameters (Modified)
 |  | addReadOnlyRootHostsString |
 |  | addReadWriteRootHostsString |
 |  | removeHostsString |
-

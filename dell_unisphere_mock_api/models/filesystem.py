@@ -1,6 +1,7 @@
-from typing import Dict, List, Optional
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
+
 
 class FilesystemModel:
     def __init__(self):
@@ -17,15 +18,15 @@ class FilesystemModel:
             "cifsShares": [],
             "nfsShares": [],
             "created": datetime.now(timezone.utc),
-            "modified": datetime.now(timezone.utc)
+            "modified": datetime.now(timezone.utc),
         }
-        
+
         # Calculate initial allocated size based on thin provisioning
         if filesystem.get("isThinEnabled", True):
             filesystem["sizeAllocated"] = min(filesystem["size"] // 10, 1024 * 1024 * 1024)  # 10% or 1GB
         else:
             filesystem["sizeAllocated"] = filesystem["size"]
-        
+
         self.filesystems[filesystem_id] = filesystem
         return filesystem
 
@@ -38,9 +39,9 @@ class FilesystemModel:
     def update_filesystem(self, filesystem_id: str, update_data: dict) -> Optional[dict]:
         if filesystem_id not in self.filesystems:
             return None
-        
+
         filesystem = self.filesystems[filesystem_id]
-        
+
         # Handle size increase
         if "size" in update_data and update_data["size"] > filesystem["size"]:
             size_increase = update_data["size"] - filesystem["size"]
@@ -48,12 +49,12 @@ class FilesystemModel:
                 filesystem["sizeAllocated"] += size_increase // 10
             else:
                 filesystem["sizeAllocated"] += size_increase
-        
+
         # Update other fields
         for key, value in update_data.items():
             if value is not None:
                 filesystem[key] = value
-        
+
         filesystem["modified"] = datetime.now(timezone.utc)
         return filesystem
 
@@ -66,7 +67,7 @@ class FilesystemModel:
     def add_share(self, filesystem_id: str, share_id: str, share_type: str) -> bool:
         if filesystem_id not in self.filesystems:
             return False
-        
+
         filesystem = self.filesystems[filesystem_id]
         if share_type.upper() == "CIFS":
             if share_id not in filesystem["cifsShares"]:
@@ -76,13 +77,13 @@ class FilesystemModel:
                 filesystem["nfsShares"].append(share_id)
         else:
             return False
-        
+
         return True
 
     def remove_share(self, filesystem_id: str, share_id: str, share_type: str) -> bool:
         if filesystem_id not in self.filesystems:
             return False
-        
+
         filesystem = self.filesystems[filesystem_id]
         if share_type.upper() == "CIFS":
             if share_id in filesystem["cifsShares"]:
@@ -92,5 +93,5 @@ class FilesystemModel:
                 filesystem["nfsShares"].remove(share_id)
         else:
             return False
-        
+
         return True

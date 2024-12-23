@@ -1,6 +1,7 @@
-from typing import Dict, List, Optional
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
+
 
 class NasServerModel:
     def __init__(self):
@@ -16,7 +17,7 @@ class NasServerModel:
             "fileInterfaces": [],
             "fileSystemCount": 0,
             "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc)
+            "updated_at": datetime.now(timezone.utc),
         }
         self.nas_servers[nas_server_id] = nas_server
         return nas_server
@@ -30,16 +31,16 @@ class NasServerModel:
     def update_nas_server(self, nas_server_id: str, update_data: dict) -> Optional[dict]:
         if nas_server_id not in self.nas_servers:
             return None
-        
+
         nas_server = self.nas_servers[nas_server_id]
         for key, value in update_data.items():
             if value is not None:
                 nas_server[key] = value
-                
+
                 # Update protocols if multiprotocol setting changes
                 if key == "isMultiProtocolEnabled":
                     nas_server["protocols"] = ["NFSv3", "CIFS"] if value else ["NFSv3"]
-        
+
         nas_server["updated_at"] = datetime.now(timezone.utc)
         return nas_server
 

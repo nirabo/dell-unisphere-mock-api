@@ -1,7 +1,8 @@
-from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
+from typing import List, Optional
 from uuid import uuid4
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LUNTypeEnum(str, Enum):
@@ -67,7 +68,10 @@ class LUNUpdate(BaseModel):
 
 
 class LUNInDB(LUNBase):
-    id: str = Field(default_factory=lambda: str(uuid4()), description="Unique identifier for the LUN")
+    id: str = Field(
+        default_factory=lambda: str(uuid4()),
+        description="Unique identifier for the LUN",
+    )
 
 
 class LUN(LUNInDB):
@@ -89,8 +93,8 @@ class LUN(LUNInDB):
                 "health": {
                     "value": 5,
                     "descriptionIds": ["ALRT_COMPONENT_OK"],
-                    "descriptions": ["The component is operating normally."]
-                }
+                    "descriptions": ["The component is operating normally."],
+                },
             }
-        }
+        },
     )

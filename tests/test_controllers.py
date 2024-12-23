@@ -1,11 +1,13 @@
 import pytest
 from fastapi import HTTPException
-from dell_unisphere_mock_api.controllers.storage_resource_controller import StorageResourceController
+
 from dell_unisphere_mock_api.controllers.filesystem_controller import FilesystemController
 from dell_unisphere_mock_api.controllers.nas_server_controller import NasServerController
-from dell_unisphere_mock_api.schemas.storage_resource import StorageResourceCreate, StorageResourceUpdate
+from dell_unisphere_mock_api.controllers.storage_resource_controller import StorageResourceController
 from dell_unisphere_mock_api.schemas.filesystem import FilesystemCreate, FilesystemUpdate
 from dell_unisphere_mock_api.schemas.nas_server import NasServerCreate, NasServerUpdate
+from dell_unisphere_mock_api.schemas.storage_resource import StorageResourceCreate, StorageResourceUpdate
+
 
 class TestStorageResourceController:
     @pytest.fixture
@@ -22,7 +24,7 @@ class TestStorageResourceController:
             isThinEnabled=True,
             isCompressionEnabled=False,
             isAdvancedDedupEnabled=False,
-            sizeTotal=1024 * 1024 * 1024 * 100  # 100GB
+            sizeTotal=1024 * 1024 * 1024 * 100,  # 100GB
         )
 
     @pytest.mark.asyncio
@@ -48,10 +50,7 @@ class TestStorageResourceController:
     @pytest.mark.asyncio
     async def test_update_storage_resource(self, controller, sample_resource_data):
         created = await controller.create_storage_resource(sample_resource_data)
-        update_data = StorageResourceUpdate(
-            description="Updated description",
-            isCompressionEnabled=True
-        )
+        update_data = StorageResourceUpdate(description="Updated description", isCompressionEnabled=True)
         updated = await controller.update_storage_resource(created["id"], update_data)
         assert updated["description"] == update_data.description
         assert updated["isCompressionEnabled"] == update_data.isCompressionEnabled
@@ -67,24 +66,25 @@ class TestStorageResourceController:
     @pytest.mark.asyncio
     async def test_host_access_management(self, controller, sample_resource_data):
         created = await controller.create_storage_resource(sample_resource_data)
-        
+
         # Update host access
         success = await controller.update_host_access(created["id"], "host1", "READ_WRITE")
         assert success
-        
+
         # Verify host access was added
         retrieved = await controller.get_storage_resource(created["id"])
         assert len(retrieved["hostAccess"]) == 1
         assert retrieved["hostAccess"][0]["host"] == "host1"
         assert retrieved["hostAccess"][0]["accessType"] == "READ_WRITE"
-        
+
         # Remove host access
         success = await controller.remove_host_access(created["id"], "host1")
         assert success
-        
+
         # Verify host access was removed
         retrieved = await controller.get_storage_resource(created["id"])
         assert len(retrieved["hostAccess"]) == 0
+
 
 class TestFilesystemController:
     @pytest.fixture
@@ -100,7 +100,7 @@ class TestFilesystemController:
             pool="pool_1",
             size=1024 * 1024 * 1024 * 100,  # 100GB
             isThinEnabled=True,
-            supportedProtocols=["NFS", "CIFS"]
+            supportedProtocols=["NFS", "CIFS"],
         )
 
     @pytest.mark.asyncio
@@ -116,6 +116,7 @@ class TestFilesystemController:
         retrieved = await controller.get_filesystem(created["id"])
         assert retrieved == created
 
+
 class TestNasServerController:
     @pytest.fixture
     def controller(self):
@@ -129,7 +130,7 @@ class TestNasServerController:
             homeSP="spa",
             pool="pool_1",
             currentUnixDirectoryService="NONE",
-            isMultiProtocolEnabled=True
+            isMultiProtocolEnabled=True,
         )
 
     @pytest.mark.asyncio

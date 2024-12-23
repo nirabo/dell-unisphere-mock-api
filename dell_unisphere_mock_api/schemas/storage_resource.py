@@ -1,7 +1,9 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, Field
+
 
 class StorageResourceTypeEnum(str, Enum):
     LUN = "LUN"
@@ -12,21 +14,25 @@ class StorageResourceTypeEnum(str, Enum):
     VVOL_DATASTORE_LUN = "VVolDatastoreLUN"
     VVOL_DATASTORE_FS = "VVolDatastoreFS"
 
+
 class StorageResourceHealthEnum(str, Enum):
     OK = "OK"
     WARNING = "WARNING"
     ERROR = "ERROR"
     UNKNOWN = "UNKNOWN"
 
+
 class ThinStatusEnum(str, Enum):
     True_ = "True"
     False_ = "False"
     Mixed = "Mixed"
 
+
 class RelocationPolicyEnum(str, Enum):
     Auto = "Auto"
     Scheduled = "Scheduled"
     Manual = "Manual"
+
 
 class TieringPolicyEnum(str, Enum):
     Autotier = "Autotier"
@@ -34,6 +40,7 @@ class TieringPolicyEnum(str, Enum):
     LowestAvailable = "LowestAvailable"
     NoData = "NoData"
     StartHighThenAutotier = "StartHighThenAutotier"
+
 
 class StorageResourceBase(BaseModel):
     name: str = Field(..., description="User-specified storage resource name")
@@ -46,8 +53,10 @@ class StorageResourceBase(BaseModel):
     tieringPolicy: Optional[TieringPolicyEnum] = Field(None, description="FAST VP tiering policy")
     relocationPolicy: Optional[RelocationPolicyEnum] = Field(None, description="Data relocation policy")
 
+
 class StorageResourceCreate(StorageResourceBase):
     pass
+
 
 class StorageResourceUpdate(BaseModel):
     description: Optional[str] = None
@@ -56,6 +65,7 @@ class StorageResourceUpdate(BaseModel):
     tieringPolicy: Optional[TieringPolicyEnum] = None
     relocationPolicy: Optional[RelocationPolicyEnum] = None
 
+
 class StorageResourceResponse(StorageResourceBase):
     id: str = Field(..., description="Unique identifier of the storage resource")
     health: StorageResourceHealthEnum = Field(..., description="Health status of the storage resource")
@@ -63,7 +73,9 @@ class StorageResourceResponse(StorageResourceBase):
     sizeUsed: int = Field(..., description="Used size in bytes")
     sizeAllocated: int = Field(..., description="Allocated size in bytes")
     thinStatus: ThinStatusEnum = Field(..., description="Thin provisioning status")
-    esxFilesystemMajorVersion: Optional[str] = Field(None, description="ESX filesystem major version for VMware resources")
+    esxFilesystemMajorVersion: Optional[str] = Field(
+        None, description="ESX filesystem major version for VMware resources"
+    )
     metadataSize: int = Field(0, description="Size of metadata in bytes")
     metadataSizeAllocated: int = Field(0, description="Allocated size of metadata in bytes")
     snapCount: int = Field(0, description="Number of snapshots")

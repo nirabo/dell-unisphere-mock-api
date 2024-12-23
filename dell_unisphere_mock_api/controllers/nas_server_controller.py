@@ -1,7 +1,10 @@
+from typing import List
+
 from fastapi import HTTPException
+
 from dell_unisphere_mock_api.models.nas_server import NasServerModel
 from dell_unisphere_mock_api.schemas.nas_server import NasServerCreate, NasServerUpdate
-from typing import List
+
 
 class NasServerController:
     def __init__(self):

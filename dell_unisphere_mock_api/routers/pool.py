@@ -1,19 +1,22 @@
-from fastapi import APIRouter, HTTPException, Depends, Response, Query
 from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 
-from dell_unisphere_mock_api.schemas.pool import Pool, PoolCreate, PoolUpdate
 from dell_unisphere_mock_api.controllers.pool_controller import PoolController
 from dell_unisphere_mock_api.core.auth import get_current_user
+from dell_unisphere_mock_api.schemas.pool import Pool, PoolCreate, PoolUpdate
 
 router = APIRouter()
 
 pool_controller = PoolController()
 
+
 @router.post("/types/pool/instances", response_model=Pool, status_code=201)
 async def create_pool(pool: PoolCreate, _: dict = Depends(get_current_user)) -> Pool:
     """Create a new storage pool."""
     return pool_controller.create_pool(pool)
+
 
 @router.get("/instances/pool/name:{name}", response_model=Pool)
 async def get_pool_by_name(name: str, _: dict = Depends(get_current_user)) -> Pool:
@@ -23,6 +26,7 @@ async def get_pool_by_name(name: str, _: dict = Depends(get_current_user)) -> Po
         raise HTTPException(status_code=404, detail="Pool not found")
     return pool
 
+
 @router.get("/instances/pool/{pool_id}", response_model=Pool)
 async def get_pool(pool_id: str, _: dict = Depends(get_current_user)) -> Pool:
     """Get a pool by ID."""
@@ -31,6 +35,7 @@ async def get_pool(pool_id: str, _: dict = Depends(get_current_user)) -> Pool:
         raise HTTPException(status_code=404, detail="Pool not found")
     return pool
 
+
 @router.get("/types/pool/instances")
 async def list_pools(
     _: dict = Depends(get_current_user),
@@ -38,22 +43,22 @@ async def list_pools(
     fields: Optional[str] = Query(None),
     page: Optional[int] = Query(1),
     per_page: Optional[int] = Query(2000),
-    orderby: Optional[str] = Query(None)
+    orderby: Optional[str] = Query(None),
 ) -> JSONResponse:
     """List all pools with filtering and pagination."""
     pools = pool_controller.list_pools()
-    
+
     # Apply sorting if specified
     if orderby:
         field, direction = orderby.split(" ") if " " in orderby else (orderby, "asc")
         reverse = direction.lower() == "desc"
         pools = sorted(pools, key=lambda x: getattr(x, field), reverse=reverse)
-    
+
     # Apply pagination
     start_idx = (page - 1) * per_page
     end_idx = start_idx + per_page
     pools = pools[start_idx:end_idx]
-    
+
     # Format response according to fields parameter
     if fields:
         field_list = fields.split(",")
@@ -66,15 +71,16 @@ async def list_pools(
             entries.append({"content": content})
     else:
         entries = [{"content": pool.model_dump()} for pool in pools]
-    
+
     response_data = {
         "@base": "https://example.com/api/types/pool/instances",  # This should be configured properly
         "updated": "2024-12-23T12:59:46+02:00",  # Use actual current time
         "links": [{"rel": "self", "href": f"&page={page}"}],
-        "entries": entries
+        "entries": entries,
     }
-    
+
     return JSONResponse(content=response_data)
+
 
 @router.patch("/instances/pool/{pool_id}", response_model=Pool)
 async def modify_pool(pool_id: str, pool_update: PoolUpdate, _: dict = Depends(get_current_user)) -> Pool:
@@ -84,6 +90,7 @@ async def modify_pool(pool_id: str, pool_update: PoolUpdate, _: dict = Depends(g
         raise HTTPException(status_code=404, detail="Pool not found")
     return pool
 
+
 @router.delete("/instances/pool/name:{name}", status_code=204)
 async def delete_pool_by_name(name: str, _: dict = Depends(get_current_user)):
     """Delete a pool by name."""
@@ -91,6 +98,7 @@ async def delete_pool_by_name(name: str, _: dict = Depends(get_current_user)):
     if not success:
         raise HTTPException(status_code=404, detail="Pool not found")
     return Response(status_code=204)
+
 
 @router.delete("/instances/pool/{pool_id}", status_code=204)
 async def delete_pool(pool_id: str, _: dict = Depends(get_current_user)):

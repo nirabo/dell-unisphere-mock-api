@@ -1,5 +1,7 @@
-from typing import Dict, Optional, List
-from dell_unisphere_mock_api.schemas.disk import DiskTypeEnum, DiskTierEnum
+from typing import Dict, List, Optional
+
+from dell_unisphere_mock_api.schemas.disk import DiskTierEnum, DiskTypeEnum
+
 
 class DiskModel:
     def __init__(self):
@@ -9,7 +11,7 @@ class DiskModel:
     def create(self, disk: dict) -> dict:
         disk_id = str(self.next_id)
         self.next_id += 1
-        
+
         disk["id"] = disk_id
         self.disks[disk_id] = disk
         return disk
@@ -48,6 +50,6 @@ class DiskModel:
         disk_to_tier = {
             "SAS_FLASH": "Extreme_Performance",
             "SAS": "Performance",
-            "NL_SAS": "Capacity"
+            "NL_SAS": "Capacity",
         }
         return disk_type in disk_to_tier

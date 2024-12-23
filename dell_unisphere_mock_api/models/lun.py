@@ -1,23 +1,32 @@
+import random
 from typing import Dict, List, Optional
 from uuid import uuid4
-import random
 
-from dell_unisphere_mock_api.schemas.lun import LUN, LUNCreate, LUNUpdate, LUNHealth, LUNInDB
+from dell_unisphere_mock_api.schemas.lun import LUN, LUNCreate, LUNHealth, LUNUpdate
 
 
 class LUNModel:
-    _instance = None
+    """Model for managing LUNs (Logical Unit Numbers)."""
 
-    def __new__(cls):
+    _instance = None
+    luns: Dict[str, LUN]  # Class-level type annotation
+
+    def __new__(cls) -> "LUNModel":
+        """Singleton pattern implementation."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance.luns: Dict[str, LUN] = {}
+            cls._instance.luns = {}  # Initialize in __new__
         return cls._instance
+
+    def __init__(self) -> None:
+        """Initialize the LUN model."""
+        # No initialization needed as it's handled in __new__
+        pass
 
     def _generate_wwn(self) -> str:
         """Generate a random World Wide Name for a LUN."""
         prefix = "60060160372045"
-        suffix = ''.join([random.choice('0123456789ABCDEF') for _ in range(18)])
+        suffix = "".join([random.choice("0123456789ABCDEF") for _ in range(18)])
         return f"{prefix}{suffix}"
 
     def _create_default_health(self) -> LUNHealth:
@@ -25,7 +34,7 @@ class LUNModel:
         return LUNHealth(
             value=5,
             descriptionIds=["ALRT_COMPONENT_OK"],
-            descriptions=["The component is operating normally."]
+            descriptions=["The component is operating normally."],
         )
 
     def create_lun(self, lun_create: LUNCreate) -> LUN:
@@ -69,11 +78,11 @@ class LUNModel:
 
         current_lun = self.luns[lun_id]
         update_data = lun_update.model_dump(exclude_unset=True)
-        
+
         # Create updated LUN dict while preserving the id
         updated_lun_dict = current_lun.model_dump()
         updated_lun_dict.update(update_data)
-        
+
         # Create new LUN instance
         updated_lun = LUN(**updated_lun_dict)
         self.luns[lun_id] = updated_lun

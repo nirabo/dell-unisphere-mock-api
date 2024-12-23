@@ -1,21 +1,26 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class FilesystemTypeEnum(str, Enum):
     FileSystem = "FileSystem"
     VMware = "VMware"
 
+
 class FilesystemSnapAccessTypeEnum(str, Enum):
     Checkpoint = "Checkpoint"
     Protocol = "Protocol"
+
 
 class FilesystemHealthEnum(str, Enum):
     OK = "OK"
     WARNING = "WARNING"
     ERROR = "ERROR"
     UNKNOWN = "UNKNOWN"
+
 
 class FilesystemBase(BaseModel):
     name: str = Field(..., description="User-specified filesystem name")
@@ -30,8 +35,10 @@ class FilesystemBase(BaseModel):
     isCompressionEnabled: bool = Field(False, description="Indicates if compression is enabled")
     isAdvancedDedupEnabled: bool = Field(False, description="Indicates if advanced deduplication is enabled")
 
+
 class FilesystemCreate(FilesystemBase):
     pass
+
 
 class FilesystemUpdate(BaseModel):
     description: Optional[str] = None
@@ -40,6 +47,7 @@ class FilesystemUpdate(BaseModel):
     isCacheEnabled: Optional[bool] = None
     isCompressionEnabled: Optional[bool] = None
     isAdvancedDedupEnabled: Optional[bool] = None
+
 
 class FilesystemResponse(FilesystemBase):
     id: str = Field(..., description="Unique identifier of the filesystem")

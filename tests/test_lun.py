@@ -1,6 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
+
 from dell_unisphere_mock_api.main import app
+
 
 @pytest.fixture
 def sample_pool_data():
@@ -20,6 +22,7 @@ def sample_pool_data():
         "isHarvestEnabled": True,
     }
 
+
 @pytest.fixture
 def sample_lun_data():
     return {
@@ -33,8 +36,9 @@ def sample_lun_data():
         "isCompressionEnabled": False,
         "isThinEnabled": True,
         "isDataReductionEnabled": False,
-        "hostAccess": []
+        "hostAccess": [],
     }
+
 
 def test_create_lun(test_client, sample_pool_data, sample_lun_data, auth_headers):
     # First create a pool
@@ -52,6 +56,7 @@ def test_create_lun(test_client, sample_pool_data, sample_lun_data, auth_headers
     assert data["pool_id"] == pool_id
     assert "id" in data
     assert "wwn" in data
+
 
 def test_get_lun(test_client, sample_pool_data, sample_lun_data, auth_headers):
     # First create a pool
@@ -72,6 +77,7 @@ def test_get_lun(test_client, sample_pool_data, sample_lun_data, auth_headers):
     assert data["id"] == lun_id
     assert data["name"] == sample_lun_data["name"]
 
+
 def test_get_lun_by_name(test_client, sample_pool_data, sample_lun_data, auth_headers):
     # First create a pool
     pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
@@ -88,6 +94,7 @@ def test_get_lun_by_name(test_client, sample_pool_data, sample_lun_data, auth_he
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == sample_lun_data["name"]
+
 
 def test_list_luns(test_client, sample_pool_data, sample_lun_data, auth_headers):
     # First create a pool
@@ -106,6 +113,7 @@ def test_list_luns(test_client, sample_pool_data, sample_lun_data, auth_headers)
     data = response.json()
     assert isinstance(data, list)
     assert len(data) > 0
+
 
 def test_get_luns_by_pool(test_client, sample_pool_data, sample_lun_data, auth_headers):
     # First create a pool
@@ -126,6 +134,7 @@ def test_get_luns_by_pool(test_client, sample_pool_data, sample_lun_data, auth_h
     assert len(data) > 0
     assert all(lun["pool_id"] == pool_id for lun in data)
 
+
 def test_modify_lun(test_client, sample_pool_data, sample_lun_data, auth_headers):
     # First create a pool
     pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
@@ -141,13 +150,14 @@ def test_modify_lun(test_client, sample_pool_data, sample_lun_data, auth_headers
     # Modify the LUN
     update_data = {
         "description": "Updated LUN description",
-        "isCompressionEnabled": True
+        "isCompressionEnabled": True,
     }
     response = test_client.patch(f"/api/instances/lun/{lun_id}", json=update_data, headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["description"] == update_data["description"]
     assert data["isCompressionEnabled"] == update_data["isCompressionEnabled"]
+
 
 def test_delete_lun(test_client, sample_pool_data, sample_lun_data, auth_headers):
     # First create a pool
@@ -168,6 +178,7 @@ def test_delete_lun(test_client, sample_pool_data, sample_lun_data, auth_headers
     # Verify it's gone
     get_response = test_client.get(f"/api/instances/lun/{lun_id}", headers=auth_headers)
     assert get_response.status_code == 404
+
 
 def test_delete_lun_by_name(test_client, sample_pool_data, sample_lun_data, auth_headers):
     # First create a pool

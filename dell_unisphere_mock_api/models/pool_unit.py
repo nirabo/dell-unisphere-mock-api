@@ -1,5 +1,7 @@
-from typing import Dict, Optional, List
-from dell_unisphere_mock_api.schemas.pool_unit import PoolUnitTypeEnum, PoolUnitOpStatusEnum
+from typing import Dict, List, Optional
+
+from dell_unisphere_mock_api.schemas.pool_unit import PoolUnitOpStatusEnum, PoolUnitTypeEnum
+
 
 class PoolUnitModel:
     def __init__(self):
@@ -9,7 +11,7 @@ class PoolUnitModel:
     def create(self, pool_unit: dict) -> dict:
         pool_unit_id = str(self.next_id)
         self.next_id += 1
-        
+
         pool_unit["id"] = pool_unit_id
         self.pool_units[pool_unit_id] = pool_unit
         return pool_unit

@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+
 from dell_unisphere_mock_api.main import app
 
 
@@ -18,7 +19,7 @@ def sample_pool_data():
         "poolFastVP": True,
         "isFASTCacheEnabled": False,
         "isFASTVpScheduleEnabled": True,
-        "isHarvestEnabled": True
+        "isHarvestEnabled": True,
     }
 
 
@@ -79,10 +80,7 @@ def test_modify_pool(test_client, sample_pool_data, auth_headers):
     pool_id = create_response.json()["id"]
 
     # Modify the pool
-    update_data = {
-        "description": "Modified test pool",
-        "alertThreshold": 75
-    }
+    update_data = {"description": "Modified test pool", "alertThreshold": 75}
     response = test_client.patch(f"/api/instances/pool/{pool_id}", json=update_data, headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
@@ -103,6 +101,7 @@ def test_delete_pool(test_client, sample_pool_data, auth_headers):
     # Verify it's gone
     get_response = test_client.get(f"/api/instances/pool/{pool_id}", headers=auth_headers)
     assert get_response.status_code == 404
+
 
 def test_delete_pool_by_name(test_client, sample_pool_data, auth_headers):
     # First create a pool

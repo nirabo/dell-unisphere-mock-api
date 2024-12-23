@@ -1,17 +1,21 @@
 from enum import Enum
+from typing import List, Optional
+
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, List
+
 
 class DiskTypeEnum(str, Enum):
     SAS = "SAS"
     SAS_FLASH = "SAS_FLASH"
     NL_SAS = "NL_SAS"
 
+
 class DiskTierEnum(str, Enum):
     NONE = "None"
     EXTREME_PERFORMANCE = "Extreme_Performance"  # SSD/Flash
     PERFORMANCE = "Performance"  # SAS
     CAPACITY = "Capacity"  # NL-SAS
+
 
 class DiskBase(BaseModel):
     name: Optional[str] = None
@@ -27,13 +31,16 @@ class DiskBase(BaseModel):
     firmware_version: Optional[str] = None
     health_status: str = "OK"
 
+
 class DiskCreate(DiskBase):
     pass
+
 
 class DiskUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     firmware_version: Optional[str] = None
+
 
 class Disk(DiskBase):
     id: str

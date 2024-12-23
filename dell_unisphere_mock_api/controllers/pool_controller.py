@@ -1,8 +1,8 @@
 from typing import List, Optional
 from uuid import uuid4
 
-from dell_unisphere_mock_api.schemas.pool import Pool, PoolCreate, PoolUpdate
 from dell_unisphere_mock_api.models.pool import PoolModel
+from dell_unisphere_mock_api.schemas.pool import Pool, PoolCreate, PoolUpdate
 
 
 class PoolController:

@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class NasServerProtocolEnum(str, Enum):
     NFSv3 = "NFSv3"
@@ -8,11 +10,13 @@ class NasServerProtocolEnum(str, Enum):
     CIFS = "CIFS"
     Multiprotocol = "Multiprotocol"
 
+
 class NasServerHealthEnum(str, Enum):
     OK = "OK"
     WARNING = "WARNING"
     ERROR = "ERROR"
     UNKNOWN = "UNKNOWN"
+
 
 class NasServerBase(BaseModel):
     name: str = Field(..., description="User-specified NAS server name")
@@ -26,14 +30,17 @@ class NasServerBase(BaseModel):
     currentUnixDirectory: Optional[str] = Field(None, description="Current Unix directory service being used")
     isMultiProtocolEnabled: bool = Field(False, description="Indicates whether multi-protocol sharing is enabled")
 
+
 class NasServerCreate(NasServerBase):
     pass
+
 
 class NasServerUpdate(BaseModel):
     description: Optional[str] = None
     defaultUnixUser: Optional[str] = None
     defaultWindowsUser: Optional[str] = None
     isMultiProtocolEnabled: Optional[bool] = None
+
 
 class NasServerResponse(NasServerBase):
     id: str = Field(..., description="Unique identifier of the NAS server")

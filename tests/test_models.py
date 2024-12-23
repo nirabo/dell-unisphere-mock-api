@@ -1,8 +1,11 @@
-import pytest
 from datetime import datetime
-from dell_unisphere_mock_api.models.storage_resource import StorageResourceModel
+
+import pytest
+
 from dell_unisphere_mock_api.models.filesystem import FilesystemModel
 from dell_unisphere_mock_api.models.nas_server import NasServerModel
+from dell_unisphere_mock_api.models.storage_resource import StorageResourceModel
+
 
 class TestStorageResourceModel:
     @pytest.fixture
@@ -19,7 +22,7 @@ class TestStorageResourceModel:
             "isThinEnabled": True,
             "isCompressionEnabled": False,
             "isAdvancedDedupEnabled": False,
-            "sizeTotal": 1024 * 1024 * 1024 * 100  # 100GB
+            "sizeTotal": 1024 * 1024 * 1024 * 100,  # 100GB
         }
 
     def test_create_storage_resource(self, model, sample_resource_data):
@@ -40,11 +43,9 @@ class TestStorageResourceModel:
     def test_list_storage_resources(self, model, sample_resource_data):
         # Create multiple resources
         resource1 = model.create_storage_resource(sample_resource_data)
-        resource2 = model.create_storage_resource({
-            **sample_resource_data,
-            "name": "test_resource_2",
-            "type": "FILESYSTEM"
-        })
+        resource2 = model.create_storage_resource(
+            {**sample_resource_data, "name": "test_resource_2", "type": "FILESYSTEM"}
+        )
 
         # Test listing all resources
         resources = model.list_storage_resources()
@@ -59,7 +60,7 @@ class TestStorageResourceModel:
         resource = model.create_storage_resource(sample_resource_data)
         update_data = {
             "description": "Updated description",
-            "isCompressionEnabled": True
+            "isCompressionEnabled": True,
         }
         updated = model.update_storage_resource(resource["id"], update_data)
         assert updated["description"] == update_data["description"]
@@ -72,13 +73,13 @@ class TestStorageResourceModel:
 
     def test_host_access_management(self, model, sample_resource_data):
         resource = model.create_storage_resource(sample_resource_data)
-        
+
         # Add host access
         assert model.update_host_access(resource["id"], "host1", "READ_WRITE") is True
         updated = model.get_storage_resource(resource["id"])
         assert len(updated["hostAccess"]) == 1
         assert updated["hostAccess"][0]["host"] == "host1"
-        
+
         # Remove host access
         assert model.remove_host_access(resource["id"], "host1") is True
         updated = model.get_storage_resource(resource["id"])
@@ -88,11 +89,12 @@ class TestStorageResourceModel:
         resource = model.create_storage_resource(sample_resource_data)
         size_used = 1024 * 1024 * 1024 * 50  # 50GB
         tier_usage = {"tier_1": size_used}
-        
+
         assert model.update_usage_stats(resource["id"], size_used, tier_usage) is True
         updated = model.get_storage_resource(resource["id"])
         assert updated["sizeUsed"] == size_used
         assert updated["perTierSizeUsed"] == tier_usage
+
 
 class TestFilesystemModel:
     @pytest.fixture
@@ -108,7 +110,7 @@ class TestFilesystemModel:
             "pool": "pool_1",
             "size": 1024 * 1024 * 1024 * 100,  # 100GB
             "isThinEnabled": True,
-            "supportedProtocols": ["NFS", "CIFS"]
+            "supportedProtocols": ["NFS", "CIFS"],
         }
 
     def test_create_filesystem(self, model, sample_filesystem_data):
@@ -125,13 +127,11 @@ class TestFilesystemModel:
 
     def test_list_filesystems(self, model, sample_filesystem_data):
         fs1 = model.create_filesystem(sample_filesystem_data)
-        fs2 = model.create_filesystem({
-            **sample_filesystem_data,
-            "name": "test_fs_2"
-        })
-        
+        fs2 = model.create_filesystem({**sample_filesystem_data, "name": "test_fs_2"})
+
         filesystems = model.list_filesystems()
         assert len(filesystems) == 2
+
 
 class TestNasServerModel:
     @pytest.fixture
@@ -146,7 +146,7 @@ class TestNasServerModel:
             "homeSP": "spa",
             "pool": "pool_1",
             "currentUnixDirectoryService": "NONE",
-            "isMultiProtocolEnabled": True
+            "isMultiProtocolEnabled": True,
         }
 
     def test_create_nas_server(self, model, sample_nas_data):
@@ -162,10 +162,7 @@ class TestNasServerModel:
 
     def test_list_nas_servers(self, model, sample_nas_data):
         nas1 = model.create_nas_server(sample_nas_data)
-        nas2 = model.create_nas_server({
-            **sample_nas_data,
-            "name": "test_nas_2"
-        })
-        
+        nas2 = model.create_nas_server({**sample_nas_data, "name": "test_nas_2"})
+
         servers = model.list_nas_servers()
         assert len(servers) == 2
