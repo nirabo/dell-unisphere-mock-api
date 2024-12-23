@@ -8,8 +8,8 @@
 
 A FastAPI-based mock implementation of the Dell EMC Unisphere REST API for testing and development purposes.
 
-[![Tests](https://github.com/YOUR_USERNAME/dell-unisphere-mock-api/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_USERNAME/dell-unisphere-mock-api/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/YOUR_USERNAME/dell-unisphere-mock-api/branch/master/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/dell-unisphere-mock-api)
+[![Tests](https://github.com/nirabo/dell-unisphere-mock-api/actions/workflows/test.yml/badge.svg)](https://github.com/nirabo/dell-unisphere-mock-api/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/nirabo/dell-unisphere-mock-api/branch/master/graph/badge.svg)](https://codecov.io/gh/nirabo/dell-unisphere-mock-api)
 [![PyPI version](https://badge.fury.io/py/dell-unisphere-mock-api.svg)](https://badge.fury.io/py/dell-unisphere-mock-api)
 [![Python Version](https://img.shields.io/pypi/pyversions/dell-unisphere-mock-api.svg)](https://pypi.org/project/dell-unisphere-mock-api)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -41,7 +41,7 @@ pip install "dell-unisphere-mock-api[test,dev]"
 ### From Source
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/dell-unisphere-mock-api.git
+git clone https://github.com/nirabo/dell-unisphere-mock-api.git
 cd dell-unisphere-mock-api
 make venv  # Creates virtual environment and installs package in editable mode with dev tools
 ```
