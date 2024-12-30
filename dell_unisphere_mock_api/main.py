@@ -23,6 +23,7 @@ app = FastAPI(
     title="Mock Unity Unisphere API",
     description="A mock implementation of Dell Unity Unisphere Management REST API.",
     version="1.0.0",
+    swagger_ui_parameters={"persistAuthorization": True},  # Keep authentication between page reloads
 )
 
 # Configure CORS
