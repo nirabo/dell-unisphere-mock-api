@@ -55,6 +55,7 @@ def test_create_job(sample_job_data, auth_headers):
     assert response.status_code == 202
     assert "id" in response.json()
 
+
 def test_get_job(sample_job_data, auth_headers):
     headers, cookies = auth_headers
     create_response = client.post(
@@ -73,6 +74,7 @@ def test_get_job(sample_job_data, auth_headers):
     assert response.status_code == 200
     assert response.json()["id"] == job_id
 
+
 def test_list_jobs(sample_job_data, auth_headers):
     headers, cookies = auth_headers
     client.post(
@@ -89,6 +91,7 @@ def test_list_jobs(sample_job_data, auth_headers):
     )
     assert response.status_code == 200
     assert len(response.json()["entries"]) > 0
+
 
 def test_delete_job(sample_job_data, auth_headers):
     headers, cookies = auth_headers
