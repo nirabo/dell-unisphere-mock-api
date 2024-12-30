@@ -84,8 +84,18 @@ class TestTutorial52:
 
     def test_async_request(self):
         """Test making an asynchronous request."""
-        # Create a pool in async mode
-        pool_data = {"name": "async_test_pool", "type": 1, "sizeTotal": 1000000000}
+        # Create a pool in async mode with all required fields
+        pool_data = {
+            "name": "async_test_pool",
+            "type": 1,
+            "sizeTotal": 1000000000,
+            "raidType": "RAID5",
+            "poolType": "Performance",
+            "alertThreshold": 80,
+            "isFASTCacheEnabled": False,
+            "isFASTVpScheduleEnabled": True,
+            "isHarvestEnabled": True
+        }
         response = self.client.post(
             "/api/types/pool/instances?timeout=0",
             json=pool_data,
@@ -131,10 +141,8 @@ class TestTutorial52:
                         "alertThreshold": 80,
                         "isFASTCacheEnabled": False,
                         "isFASTVpScheduleEnabled": True,
-                        "isHarvestEnabled": True,
+                        "isHarvestEnabled": True
                     },
-                    "description": "Create pool task",
-                    "descriptionArg": "aggregated_pool",
                 },
                 {
                     "name": "CreateLUN",
@@ -145,10 +153,8 @@ class TestTutorial52:
                         "size": 500000000,
                         "pool": {"id": "@CreatePool.id"},
                         "isThinEnabled": True,
-                        "isCompressionEnabled": False,
+                        "isCompressionEnabled": False
                     },
-                    "description": "Create LUN task",
-                    "descriptionArg": "aggregated_lun",
                 },
             ],
         }
