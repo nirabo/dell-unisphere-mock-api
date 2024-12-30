@@ -23,6 +23,7 @@ def test_get_current_user_success():
             "path": "/api/types/pool/instances",
         }
     )
+    request._headers = {"x-emc-rest-client": "true"}  # Simulate headers
     response = Response()
 
     user = get_current_user(request, response, credentials)
@@ -40,6 +41,7 @@ def test_get_current_user_invalid_credentials():
             "path": "/api/types/pool/instances",
         }
     )
+    request._headers = {"x-emc-rest-client": "true"}  # Simulate headers
     response = Response()
 
     with pytest.raises(HTTPException) as exc_info:
@@ -51,6 +53,7 @@ def test_get_current_user_invalid_credentials():
 def test_get_current_user_missing_header():
     credentials = HTTPBasicCredentials(username="admin", password="Password123!")
     request = Request(scope={"type": "http", "headers": [], "path": "/api/types/pool/instances"})
+    request._headers = {}  # Simulate missing headers
     response = Response()
 
     with pytest.raises(HTTPException) as exc_info:
@@ -68,6 +71,7 @@ def test_verify_csrf_token_post_request():
             "path": "/api/types/pool/instances",
         }
     )
+    request._headers = {"emc-csrf-token": "valid_token"}  # Simulate headers
     verify_csrf_token(request, "POST")  # Should not raise exception
 
 
@@ -80,6 +84,7 @@ def test_verify_csrf_token_missing_token():
             "path": "/api/types/pool/instances",
         }
     )
+    request._headers = {}  # Simulate missing headers
     with pytest.raises(HTTPException) as exc_info:
         verify_csrf_token(request, "POST")
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -95,4 +100,5 @@ def test_verify_csrf_token_get_request():
             "path": "/api/types/pool/instances",
         }
     )
+    request._headers = {}  # Simulate headers
     verify_csrf_token(request, "GET")  # Should not raise exception for GET
