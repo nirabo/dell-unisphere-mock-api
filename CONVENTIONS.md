@@ -1,18 +1,31 @@
-# Engineering Conventions
+# Coding Conventions for Aider
 
-## Conventions
+This document outlines the coding conventions to be followed when using Aider for code generation and editing.
 
-> When writing code, follow these conventions.
+## General Guidelines
+- **Language**: Python
+- **Code Style**: Follow PEP 8 guidelines for Python code.
+- **Type Hints**: Use type hints for all function definitions.
 
-- Write simple, verbose code over terse, compact, dense code.
-- If a function does not have a corresponding test, mention it.
-- When building tests, don't mock anything.
+## Libraries and Packages
+- **HTTP Requests**: Prefer using `httpx` over `requests` for making HTTP requests.
+- **Logging**: Utilize the built-in `logging` module instead of print statements.
 
-## Project Structure
+## Function Definitions
+- All functions should have a docstring explaining their purpose, parameters, and return values.
+- Use descriptive names for functions and variables.
 
-fastapi_project_name/
-├── controllers
-├── core
-├── models
-├── routers
-└── schemas
+## Testing Conventions
+- Write unit tests for all new features.
+- Use `pytest` as the testing framework.
+- Each test function should start with the prefix `test_`.
+
+## Error Handling
+- Use exceptions to handle errors gracefully.
+- Avoid using bare `except:` clauses; specify the exception type.
+
+## Code Organization
+- Structure code into modules with a clear separation of concerns.
+- Group related functions into classes where applicable.
+
+## Example Code Snippet
