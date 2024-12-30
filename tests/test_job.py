@@ -80,11 +80,7 @@ def test_list_jobs(sample_job_data, auth_headers):
         cookies=cookies,
     )
 
-    response = client.get(
-        "/api/types/job/instances",
-        headers=headers,
-        cookies=cookies,
-    )
+    response = client.get("/api/types/job/instances", headers=headers, cookies=cookies)
     assert response.status_code == 200
     assert len(response.json()["entries"]) > 0
 
