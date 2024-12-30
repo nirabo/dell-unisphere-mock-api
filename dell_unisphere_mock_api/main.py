@@ -4,8 +4,8 @@ from typing import Dict, List
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_token
 from dell_unisphere_mock_api.routers import (
@@ -20,15 +20,19 @@ from dell_unisphere_mock_api.routers import (
     storage_resource,
     user,
 )
+
+
 class JobTask(BaseModel):
     name: str
     object: str
     action: str
     parametersIn: Dict
 
+
 class JobCreate(BaseModel):
     description: str
     tasks: List[JobTask]
+
 
 class JobState(str, Enum):
     PENDING = "PENDING"
@@ -37,6 +41,7 @@ class JobState(str, Enum):
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
 
+
 class Job(BaseModel):
     id: str
     state: JobState
@@ -44,6 +49,7 @@ class Job(BaseModel):
     tasks: List[JobTask]
     progressPct: Optional[float] = None
     errorMessage: Optional[str] = None
+
 
 # In-memory store for jobs
 jobs: Dict[str, Job] = {}

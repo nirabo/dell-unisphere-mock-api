@@ -94,7 +94,7 @@ class TestTutorial52:
             "alertThreshold": 80,
             "isFASTCacheEnabled": False,
             "isFASTVpScheduleEnabled": True,
-            "isHarvestEnabled": True
+            "isHarvestEnabled": True,
         }
         response = self.client.post(
             "/api/types/pool/instances?timeout=0",
@@ -141,7 +141,7 @@ class TestTutorial52:
                         "alertThreshold": 80,
                         "isFASTCacheEnabled": False,
                         "isFASTVpScheduleEnabled": True,
-                        "isHarvestEnabled": True
+                        "isHarvestEnabled": True,
                     },
                 },
                 {
@@ -153,7 +153,7 @@ class TestTutorial52:
                         "size": 500000000,
                         "pool": {"id": "@CreatePool.id"},
                         "isThinEnabled": True,
-                        "isCompressionEnabled": False
+                        "isCompressionEnabled": False,
                     },
                 },
             ],
