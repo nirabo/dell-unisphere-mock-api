@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class JobState(str, Enum):
@@ -43,8 +43,8 @@ class Job(BaseModel):
     progressPct: Optional[float] = None
     errorMessage: Optional[str] = None
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "job_123",
                 "state": "COMPLETED",
@@ -60,3 +60,4 @@ class Job(BaseModel):
                 "progressPct": 100.0,
             }
         }
+    )

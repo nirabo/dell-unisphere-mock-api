@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class HostTypeEnum(str, Enum):
@@ -38,8 +38,8 @@ class Host(BaseModel):
     health: str = "OK"
     storage_access: List[str] = []
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "host_1",
                 "name": "test_host",
@@ -52,3 +52,4 @@ class Host(BaseModel):
                 "storage_access": ["lun_1", "lun_2"],
             }
         }
+    )

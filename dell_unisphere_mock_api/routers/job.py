@@ -8,7 +8,7 @@ router = APIRouter(prefix="", tags=["Job"])
 controller = JobController()
 
 
-@router.post("/api/types/job/instances", response_model=Job, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/instances", response_model=Job, status_code=status.HTTP_202_ACCEPTED)
 async def create_job(
     job_data: JobCreate,
     background_tasks: BackgroundTasks,
@@ -20,7 +20,7 @@ async def create_job(
     return job
 
 
-@router.get("/api/instances/job/{job_id}", response_model=Job)
+@router.get("/instances/{job_id}", response_model=Job)
 async def get_job(
     job_id: str,
     current_user: dict = Depends(get_current_user),
@@ -29,7 +29,7 @@ async def get_job(
     return await controller.get_job(job_id)
 
 
-@router.get("/api/types/job/instances", response_model=dict)
+@router.get("/instances", response_model=dict)
 async def list_jobs(
     current_user: dict = Depends(get_current_user),
 ):
@@ -38,7 +38,7 @@ async def list_jobs(
     return {"@base": "/api/types/job/instances", "entries": [{"content": job.model_dump()} for job in jobs]}
 
 
-@router.delete("/api/instances/job/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/instances/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_job(
     job_id: str,
     current_user: dict = Depends(get_current_user),
@@ -56,6 +56,6 @@ async def simulate_job_processing(job_id: str):
 
     job_model = JobModel()
     await asyncio.sleep(1)  # Simulate processing time
-    job_model.update_job_state(job_id, JobState.RUNNING)
+    await job_model.update_job_state(job_id, JobState.RUNNING)
     await asyncio.sleep(2)  # Simulate more processing time
-    job_model.update_job_state(job_id, JobState.COMPLETED)
+    await job_model.update_job_state(job_id, JobState.COMPLETED)

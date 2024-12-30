@@ -20,7 +20,9 @@ class TestTutorial52:
         )
         assert response.status_code == 200
         self.csrf_token = response.headers.get("EMC-CSRF-TOKEN")
-        self.cookies = response.cookies
+        # Set cookies on client instance
+        for name, value in response.cookies.items():
+            self.client.cookies.set(name, value)
         self.auth_header = auth_header
 
     def test_get_pools_basic(self):
@@ -33,7 +35,6 @@ class TestTutorial52:
                 "EMC-CSRF-TOKEN": self.csrf_token,
                 "Authorization": self.auth_header,
             },
-            cookies=self.cookies,
         )
         assert response.status_code == 200
         data = response.json()
@@ -55,7 +56,6 @@ class TestTutorial52:
                 "EMC-CSRF-TOKEN": self.csrf_token,
                 "Authorization": self.auth_header,
             },
-            cookies=self.cookies,
         )
         assert response.status_code == 200
         data = response.json()
@@ -74,7 +74,6 @@ class TestTutorial52:
                 "EMC-CSRF-TOKEN": self.csrf_token,
                 "Authorization": self.auth_header,
             },
-            cookies=self.cookies,
         )
         assert response.status_code == 200
         data = response.json()
@@ -87,14 +86,13 @@ class TestTutorial52:
         # Create a pool in async mode with all required fields
         pool_data = {
             "name": "async_test_pool",
-            "type": 1,  # Pool type (e.g., 1 for Traditional)
             "sizeTotal": 1000000000,  # Total size in bytes (1GB)
-            "raidType": 1,  # RAID type (1 for RAID5)
-            "alertThreshold": 80,  # Alert threshold percentage
-            "isFASTCacheEnabled": False,  # FAST Cache enabled
-            "isFASTVpScheduleEnabled": True,  # FAST VP schedule enabled
-            "isHarvestEnabled": True,  # Harvesting enabled
-            "addRaidGroupParameters": [{"dskGroup": {"id": "dg_1"}, "numDisks": 3, "raidType": 1, "stripeWidth": 3}],
+            "sizeFree": 1000000000,  # Initially all space is free
+            "sizeUsed": 0,  # Initially no space used
+            "sizeSubscribed": 0,  # Initially no space subscribed
+            "raidType": "RAID5",
+            "poolType": "Performance",
+            "description": "Test pool created via async request",
         }
         response = self.client.post(
             "/api/types/pool/instances?timeout=0",  # Async request with timeout=0
@@ -104,20 +102,18 @@ class TestTutorial52:
                 "EMC-CSRF-TOKEN": self.csrf_token,
                 "Authorization": self.auth_header,
             },
-            cookies=self.cookies,
         )
         assert response.status_code == 202  # Expecting 202 Accepted for async request
         job_id = response.json()["id"]  # Extract job ID from response
 
         # Check job status
         response = self.client.get(
-            f"/api/instances/job/{job_id}",
+            f"/api/types/job/instances/{job_id}",
             headers={
                 "X-EMC-REST-CLIENT": "true",
                 "EMC-CSRF-TOKEN": self.csrf_token,
                 "Authorization": self.auth_header,
             },
-            cookies=self.cookies,
         )
         assert response.status_code == 200  # Expecting 200 OK for job status check
         assert "state" in response.json()  # Verify job state is included in response
@@ -134,14 +130,12 @@ class TestTutorial52:
                     "action": "create",
                     "parametersIn": {
                         "name": "aggregated_pool",
-                        "type": 1,
                         "sizeTotal": 1000000000,
+                        "sizeFree": 1000000000,
+                        "sizeUsed": 0,
+                        "sizeSubscribed": 0,
                         "raidType": "RAID5",
                         "poolType": "Performance",
-                        "alertThreshold": 80,
-                        "isFASTCacheEnabled": False,
-                        "isFASTVpScheduleEnabled": True,
-                        "isHarvestEnabled": True,
                     },
                 },
                 {
@@ -168,20 +162,18 @@ class TestTutorial52:
                 "EMC-CSRF-TOKEN": self.csrf_token,
                 "Authorization": self.auth_header,
             },
-            cookies=self.cookies,
         )
         assert response.status_code == 202
         job_id = response.json()["id"]
 
         # Check job status
         response = self.client.get(
-            f"/api/instances/job/{job_id}",
+            f"/api/types/job/instances/{job_id}",
             headers={
                 "X-EMC-REST-CLIENT": "true",
                 "EMC-CSRF-TOKEN": self.csrf_token,
                 "Authorization": self.auth_header,
             },
-            cookies=self.cookies,
         )
         assert response.status_code == 200
         assert "state" in response.json()

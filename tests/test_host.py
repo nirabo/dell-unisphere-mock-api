@@ -67,7 +67,7 @@ def test_host_schema():
 def test_host_schema_config():
     """Test Host schema configuration"""
     # Test schema example
-    example = Host.Config.json_schema_extra["example"]
+    example = Host.model_config["json_schema_extra"]["example"]
     assert example["id"] == "host_1"
     assert example["name"] == "test_host"
     assert example["type"] == "Linux"
