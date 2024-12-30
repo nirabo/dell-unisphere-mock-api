@@ -1,4 +1,5 @@
 import pytest
+import pytest_asyncio
 from fastapi import HTTPException, Request, Response, status
 from fastapi.security import HTTPBasicCredentials
 from fastapi.testclient import TestClient
@@ -14,7 +15,8 @@ def test_verify_password():
     assert verify_password("wrong", "Password123!") == False
 
 
-def test_get_current_user_success():
+@pytest.mark.asyncio
+async def test_get_current_user_success():
     credentials = HTTPBasicCredentials(username="admin", password="Password123!")
     request = Request(
         scope={
@@ -25,13 +27,14 @@ def test_get_current_user_success():
     )
     response = Response()
 
-    user = get_current_user(request, response, credentials)
+    user = await get_current_user(request, response, credentials)
     assert user["username"] == "admin"
     assert user["role"] == "admin"
     assert "csrf_token" in user
 
 
-def test_get_current_user_invalid_credentials():
+@pytest.mark.asyncio
+async def test_get_current_user_invalid_credentials():
     credentials = HTTPBasicCredentials(username="admin", password="wrong")
     request = Request(
         scope={
@@ -43,12 +46,13 @@ def test_get_current_user_invalid_credentials():
     response = Response()
 
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user(request, response, credentials)
+        await get_current_user(request, response, credentials)
     assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert exc_info.value.detail == "Invalid credentials"
 
 
-def test_get_current_user_missing_header():
+@pytest.mark.asyncio
+async def test_get_current_user_missing_header():
     credentials = HTTPBasicCredentials(username="admin", password="Password123!")
     request = Request(
         scope={
@@ -60,7 +64,7 @@ def test_get_current_user_missing_header():
     response = Response()
 
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user(request, response, credentials)
+        await get_current_user(request, response, credentials)
     assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert exc_info.value.detail == "X-EMC-REST-CLIENT header is required"
 
