@@ -95,12 +95,7 @@ class TestTutorial52:
             "isFASTCacheEnabled": False,
             "isFASTVpScheduleEnabled": True,
             "isHarvestEnabled": True,
-            "addRaidGroupParameters": [{
-                "dskGroup": {"id": "dg_1"},
-                "numDisks": 2,
-                "raidType": 7,
-                "stripeWidth": 2
-            }]
+            "addRaidGroupParameters": [{"dskGroup": {"id": "dg_1"}, "numDisks": 2, "raidType": 7, "stripeWidth": 2}],
         }
         response = self.client.post(
             "/api/types/pool/instances?timeout=0",
@@ -148,12 +143,9 @@ class TestTutorial52:
                         "isFASTCacheEnabled": False,
                         "isFASTVpScheduleEnabled": True,
                         "isHarvestEnabled": True,
-                        "addRaidGroupParameters": [{
-                            "dskGroup": {"id": "dg_1"},
-                            "numDisks": 2,
-                            "raidType": 7,
-                            "stripeWidth": 2
-                        }]
+                        "addRaidGroupParameters": [
+                            {"dskGroup": {"id": "dg_1"}, "numDisks": 2, "raidType": 7, "stripeWidth": 2}
+                        ],
                     },
                 },
                 {
