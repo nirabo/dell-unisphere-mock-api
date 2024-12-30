@@ -42,7 +42,6 @@ async def get_current_user(
     # Debug logging
     print(f"Request path: {request.url.path}")
     print(f"Request headers: {dict(request.headers)}")
-    request._headers = headers
 
     # Skip X-EMC-REST-CLIENT header check for Swagger UI and its API requests
     is_swagger_request = (
