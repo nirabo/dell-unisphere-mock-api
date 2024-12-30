@@ -1,6 +1,6 @@
 """Main FastAPI application module for Dell Unisphere Mock API."""
 
-from typing import Dict, List
+from typing import Dict
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
