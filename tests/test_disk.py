@@ -109,6 +109,7 @@ def test_update_disk(client, auth_headers):
 
 
 def test_delete_disk(client, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     """Test deleting a disk."""
     # First create a disk
     disk_data = {
@@ -118,15 +119,15 @@ def test_delete_disk(client, auth_headers):
         "size": 1000000,
         "slot_number": 1,
     }
-    create_response = client.post("/api/types/disk/instances", json=disk_data, headers=auth_headers)
+    create_response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     disk_id = create_response.json()["id"]
 
     # Then delete it
-    response = client.delete(f"/api/types/disk/instances/{disk_id}", headers=auth_headers)
+    response = client.delete(f"/api/types/disk/instances/{disk_id}", headers=headers)
     assert response.status_code == 204
 
     # Verify it's gone
-    get_response = client.get(f"/api/types/disk/instances/{disk_id}", headers=auth_headers)
+    get_response = client.get(f"/api/types/disk/instances/{disk_id}", headers=headers)
     assert get_response.status_code == 404
 
 
