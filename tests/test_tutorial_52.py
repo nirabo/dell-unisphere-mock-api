@@ -22,7 +22,8 @@ class TestTutorial52:
         )
         assert response.status_code == 200
         self.csrf_token = response.headers.get("EMC-CSRF-TOKEN")
-        self.cookies = response.cookies
+        # Set cookies directly on the client
+        self.client.cookies = response.cookies
 
     def test_get_pools_basic(self):
         """Test the basic pool query from the tutorial"""
