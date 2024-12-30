@@ -22,6 +22,12 @@ class FilesystemHealthEnum(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
+class FilesystemProtocol(str, Enum):
+    NFS = "NFS"
+    CIFS = "CIFS"
+    SMB = "SMB"
+
+
 class FilesystemBase(BaseModel):
     name: str = Field(..., description="User-specified filesystem name")
     description: Optional[str] = Field(None, description="User-specified filesystem description")

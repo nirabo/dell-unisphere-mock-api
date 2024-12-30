@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -5,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from dell_unisphere_mock_api.controllers.pool_controller import PoolController
 from dell_unisphere_mock_api.core.auth import get_current_user
+from dell_unisphere_mock_api.core.config import settings
 from dell_unisphere_mock_api.schemas.pool import Pool, PoolCreate, PoolUpdate
 
 router = APIRouter()
@@ -12,9 +14,26 @@ router = APIRouter()
 pool_controller = PoolController()
 
 
-@router.post("/types/pool/instances", response_model=Pool, status_code=201)
-async def create_pool(pool: PoolCreate, _: dict = Depends(get_current_user)) -> Pool:
+@router.post("/types/pool/instances", response_model=Pool | dict, status_code=201)
+async def create_pool(
+    pool: PoolCreate, timeout: Optional[int] = Query(None), _: dict = Depends(get_current_user)
+) -> Pool | dict:
     """Create a new storage pool."""
+    # If timeout=0, handle as async request
+    if timeout == 0:
+        from dell_unisphere_mock_api.controllers.job_controller import JobController
+        from dell_unisphere_mock_api.schemas.job import JobCreate, JobTask
+
+        # Create a job for async pool creation
+        job_controller = JobController()
+        job_data = JobCreate(
+            description=f"Create pool {pool.name}",
+            tasks=[JobTask(name="CreatePool", object="pool", action="create", parametersIn=pool.model_dump())],
+        )
+        job = await job_controller.create_job(job_data)
+        return JSONResponse(status_code=202, content={"id": job.id})
+
+    # Handle synchronous request
     return pool_controller.create_pool(pool)
 
 
@@ -73,8 +92,8 @@ async def list_pools(
         entries = [{"content": pool.model_dump()} for pool in pools]
 
     response_data = {
-        "@base": "https://example.com/api/types/pool/instances",  # This should be configured properly
-        "updated": "2024-12-23T12:59:46+02:00",  # Use actual current time
+        "@base": f"{settings.API_BASE_URL}/types/pool/instances",
+        "updated": datetime.now(timezone.utc).isoformat(),
         "links": [{"rel": "self", "href": f"&page={page}"}],
         "entries": entries,
     }

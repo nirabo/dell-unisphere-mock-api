@@ -1,7 +1,5 @@
 """Main FastAPI application module for Dell Unisphere Mock API."""
 
-from typing import Dict
-
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,6 +9,7 @@ from dell_unisphere_mock_api.routers import (
     disk,
     disk_group,
     filesystem,
+    job,
     lun,
     nas_server,
     pool,
@@ -23,6 +22,7 @@ app = FastAPI(
     title="Mock Unity Unisphere API",
     description="A mock implementation of Dell Unity Unisphere Management REST API.",
     version="1.0.0",
+    swagger_ui_parameters={"persistAuthorization": True},  # Keep authentication between page reloads
 )
 
 # Configure CORS
@@ -50,6 +50,12 @@ async def csrf_middleware(request: Request, call_next) -> Response:
 
 # Configure routers
 app.include_router(auth.router, prefix="/api", tags=["Auth"])
+app.include_router(
+    job.router,
+    prefix="/api/types/job",
+    tags=["Job"],
+    dependencies=[Depends(get_current_user)],
+)
 app.include_router(
     storage_resource.router,
     prefix="/api",
@@ -86,8 +92,8 @@ app.include_router(disk.router, prefix="/api", tags=["Disk"], dependencies=[Depe
 app.include_router(user.router, prefix="/api", tags=["User"], dependencies=[Depends(get_current_user)])
 
 
-@app.get("/api/instances/system/0", response_model=Dict)
-async def get_system_details(current_user: Dict = Depends(get_current_user)) -> Dict:
+@app.get("/api/instances/system/0", response_model=dict)
+async def get_system_details(current_user: dict = Depends(get_current_user)) -> dict:
     """Get system details."""
     return {
         "content": {
@@ -103,8 +109,8 @@ async def get_system_details(current_user: Dict = Depends(get_current_user)) -> 
     }
 
 
-@app.get("/api/types/system/0/basicSystemInfo", response_model=Dict)
-async def get_system_info() -> Dict:
+@app.get("/api/types/system/0/basicSystemInfo", response_model=dict)
+async def get_system_info() -> dict:
     """Basic system information. This endpoint is accessible without authentication."""
     return {
         "content": {

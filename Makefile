@@ -38,13 +38,13 @@ clean-build: ## remove build artifacts
 	rm -rf dist/
 	rm -rf .eggs/
 	find . -name '*.egg-info' -exec rm -rf {} +
-	find . -name '*.egg' -exec rm -f {} +
+	find . -name '*.egg' -exec rm -rf {} +
 
 clean-pyc: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -rf {} +
+	find . -name '__pycache__' -type d -exec rm -rf {} +
 
 clean-test: ## remove test and coverage artifacts
 	rm -rf .tox/
@@ -62,13 +62,14 @@ venv: ## create virtual environment
 test-venv: ## create test virtual environment
 	test -d $(TEST_VENV) || $(PYTHON) -m venv $(TEST_VENV)
 	$(TEST_VENV_BIN)/pip install --upgrade pip
-	$(TEST_VENV_BIN)/pip install -e ".[test]"
+	$(TEST_VENV_BIN)/pip install -e ".[test,dev]"
+	$(TEST_VENV_BIN)/pre-commit install
 
 test: test-venv ## run tests with coverage reporting
 	$(TEST_VENV_BIN)/pytest -v tests/ --cov=dell_unisphere_mock_api --cov-report=term-missing --cov-report=xml:coverage.xml
 
-lint: venv ## run all linters
-	$(VENV_BIN)/pre-commit run --all-files
+lint: test-venv ## run all linters
+	$(TEST_VENV_BIN)/pre-commit run --all-files
 
 format: venv ## format code with black and isort
 	$(VENV_BIN)/black .
@@ -89,4 +90,4 @@ release: dist ## package and upload a release
 	$(PYTHON) -m twine upload dist/*
 
 run: venv ## run development server
-	$(VENV_BIN)/python -m dell_unisphere_mock_api
+	$(VENV_BIN)/python -m dell_unisphere_mock_api --reload

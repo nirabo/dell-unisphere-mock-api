@@ -20,7 +20,9 @@ class TestTutorial52:
         )
         assert response.status_code == 200
         self.csrf_token = response.headers.get("EMC-CSRF-TOKEN")
-        self.cookies = response.cookies
+        # Set cookies on client instance
+        for name, value in response.cookies.items():
+            self.client.cookies.set(name, value)
         self.auth_header = auth_header
 
     def test_get_pools_basic(self):
@@ -33,7 +35,6 @@ class TestTutorial52:
                 "EMC-CSRF-TOKEN": self.csrf_token,
                 "Authorization": self.auth_header,
             },
-            cookies=self.cookies,
         )
         assert response.status_code == 200
         data = response.json()
@@ -55,7 +56,6 @@ class TestTutorial52:
                 "EMC-CSRF-TOKEN": self.csrf_token,
                 "Authorization": self.auth_header,
             },
-            cookies=self.cookies,
         )
         assert response.status_code == 200
         data = response.json()
@@ -74,10 +74,106 @@ class TestTutorial52:
                 "EMC-CSRF-TOKEN": self.csrf_token,
                 "Authorization": self.auth_header,
             },
-            cookies=self.cookies,
         )
         assert response.status_code == 200
         data = response.json()
         # Verify sorting - names should be in descending order
         names = [entry["content"]["name"] for entry in data["entries"]]
         assert names == sorted(names, reverse=True)
+
+    def test_async_request(self):
+        """Test making an asynchronous request."""
+        # Create a pool in async mode with all required fields
+        pool_data = {
+            "name": "async_test_pool",
+            "sizeTotal": 1000000000,  # Total size in bytes (1GB)
+            "sizeFree": 1000000000,  # Initially all space is free
+            "sizeUsed": 0,  # Initially no space used
+            "sizeSubscribed": 0,  # Initially no space subscribed
+            "raidType": "RAID5",
+            "poolType": "Performance",
+            "description": "Test pool created via async request",
+        }
+        response = self.client.post(
+            "/api/types/pool/instances?timeout=0",  # Async request with timeout=0
+            json=pool_data,
+            headers={
+                "X-EMC-REST-CLIENT": "true",
+                "EMC-CSRF-TOKEN": self.csrf_token,
+                "Authorization": self.auth_header,
+            },
+        )
+        assert response.status_code == 202  # Expecting 202 Accepted for async request
+        job_id = response.json()["id"]  # Extract job ID from response
+
+        # Check job status
+        response = self.client.get(
+            f"/api/types/job/instances/{job_id}",
+            headers={
+                "X-EMC-REST-CLIENT": "true",
+                "EMC-CSRF-TOKEN": self.csrf_token,
+                "Authorization": self.auth_header,
+            },
+        )
+        assert response.status_code == 200  # Expecting 200 OK for job status check
+        assert "state" in response.json()  # Verify job state is included in response
+
+    def test_aggregated_request(self):
+        """Test making an aggregated request"""
+        # Create aggregated job data
+        job_data = {
+            "description": "Test aggregated job",
+            "tasks": [
+                {
+                    "name": "CreatePool",
+                    "object": "pool",
+                    "action": "create",
+                    "parametersIn": {
+                        "name": "aggregated_pool",
+                        "sizeTotal": 1000000000,
+                        "sizeFree": 1000000000,
+                        "sizeUsed": 0,
+                        "sizeSubscribed": 0,
+                        "raidType": "RAID5",
+                        "poolType": "Performance",
+                    },
+                },
+                {
+                    "name": "CreateLUN",
+                    "object": "storageResource",
+                    "action": "createLun",
+                    "parametersIn": {
+                        "name": "aggregated_lun",
+                        "size": 500000000,
+                        "pool": {"id": "@CreatePool.id"},
+                        "isThinEnabled": True,
+                        "isCompressionEnabled": False,
+                    },
+                },
+            ],
+        }
+
+        # Submit aggregated job
+        response = self.client.post(
+            "/api/types/job/instances?timeout=0",
+            json=job_data,
+            headers={
+                "X-EMC-REST-CLIENT": "true",
+                "EMC-CSRF-TOKEN": self.csrf_token,
+                "Authorization": self.auth_header,
+            },
+        )
+        assert response.status_code == 202
+        job_id = response.json()["id"]
+
+        # Check job status
+        response = self.client.get(
+            f"/api/types/job/instances/{job_id}",
+            headers={
+                "X-EMC-REST-CLIENT": "true",
+                "EMC-CSRF-TOKEN": self.csrf_token,
+                "Authorization": self.auth_header,
+            },
+        )
+        assert response.status_code == 200
+        assert "state" in response.json()
