@@ -89,12 +89,19 @@ class TestTutorial52:
             "name": "async_test_pool",
             "type": 1,  # Pool type (e.g., 1 for Traditional)
             "sizeTotal": 1000000000,  # Total size in bytes (1GB)
-            "raidType": "RAID5",  # RAID type
-            "poolType": "Performance",  # Pool type (Performance, Capacity, etc.)
+            "raidType": 1,  # RAID type (1 for RAID5)
             "alertThreshold": 80,  # Alert threshold percentage
             "isFASTCacheEnabled": False,  # FAST Cache enabled
             "isFASTVpScheduleEnabled": True,  # FAST VP schedule enabled
             "isHarvestEnabled": True,  # Harvesting enabled
+            "addRaidGroupParameters": [
+                {
+                    "dskGroup": {"id": "dg_1"},
+                    "numDisks": 3,
+                    "raidType": 1,
+                    "stripeWidth": 3
+                }
+            ]
         }
         response = self.client.post(
             "/api/types/pool/instances?timeout=0",  # Async request with timeout=0

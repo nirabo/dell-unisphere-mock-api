@@ -8,7 +8,7 @@ router = APIRouter(prefix="", tags=["Job"])
 controller = JobController()
 
 
-@router.post("/instances", response_model=Job, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/api/types/job/instances", response_model=Job, status_code=status.HTTP_202_ACCEPTED)
 async def create_job(
     job_data: JobCreate,
     background_tasks: BackgroundTasks,
@@ -16,25 +16,29 @@ async def create_job(
 ):
     """Create a new job."""
     job = await controller.create_job(job_data)
-    # Simulate background processing
     background_tasks.add_task(simulate_job_processing, job.id)
     return job
 
-
-@router.get("/instances/{job_id}", response_model=Job)
-async def get_job(job_id: str, current_user: dict = Depends(get_current_user)):
+@router.get("/api/types/job/instances/{job_id}", response_model=Job)
+async def get_job(
+    job_id: str, 
+    current_user: dict = Depends(get_current_user)
+):
     """Get the status of a job."""
     return await controller.get_job(job_id)
 
-
-@router.get("/instances", response_model=list[Job])
-async def list_jobs(current_user: dict = Depends(get_current_user)):
+@router.get("/api/types/job/instances", response_model=list[Job]) 
+async def list_jobs(
+    current_user: dict = Depends(get_current_user)
+):
     """List all jobs."""
     return await controller.list_jobs()
 
-
-@router.delete("/instances/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_job(job_id: str, current_user: dict = Depends(get_current_user)):
+@router.delete("/api/types/job/instances/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job(
+    job_id: str,
+    current_user: dict = Depends(get_current_user)
+):
     """Delete a job."""
     await controller.delete_job(job_id)
 
