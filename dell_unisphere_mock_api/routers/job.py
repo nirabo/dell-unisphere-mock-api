@@ -32,10 +32,7 @@ async def list_jobs(
 ):
     """List all jobs."""
     jobs = await controller.list_jobs()
-    return {
-        "@base": "/api/types/job/instances",
-        "entries": [{"content": job.model_dump()} for job in jobs]
-    }
+    return {"@base": "/api/types/job/instances", "entries": [{"content": job.model_dump()} for job in jobs]}
 
 
 @router.delete("/api/instances/job/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
