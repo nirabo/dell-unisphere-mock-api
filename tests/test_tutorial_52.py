@@ -131,10 +131,10 @@ class TestTutorial52:
                         "alertThreshold": 80,
                         "isFASTCacheEnabled": False,
                         "isFASTVpScheduleEnabled": True,
-                        "isHarvestEnabled": True
+                        "isHarvestEnabled": True,
                     },
                     "description": "Create pool task",
-                    "descriptionArg": "aggregated_pool"
+                    "descriptionArg": "aggregated_pool",
                 },
                 {
                     "name": "CreateLUN",
@@ -145,10 +145,10 @@ class TestTutorial52:
                         "size": 500000000,
                         "pool": {"id": "@CreatePool.id"},
                         "isThinEnabled": True,
-                        "isCompressionEnabled": False
+                        "isCompressionEnabled": False,
                     },
                     "description": "Create LUN task",
-                    "descriptionArg": "aggregated_lun"
+                    "descriptionArg": "aggregated_lun",
                 },
             ],
         }
