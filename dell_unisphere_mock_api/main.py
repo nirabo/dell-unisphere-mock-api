@@ -14,6 +14,7 @@ from dell_unisphere_mock_api.routers import (
     disk,
     disk_group,
     filesystem,
+    job,
     lun,
     nas_server,
     pool,
@@ -110,6 +111,12 @@ async def csrf_middleware(request: Request, call_next) -> Response:
 
 # Configure routers
 app.include_router(auth.router, prefix="/api", tags=["Auth"])
+app.include_router(
+    job.router,
+    prefix="/api",
+    tags=["Job"],
+    dependencies=[Depends(get_current_user)],
+)
 app.include_router(
     storage_resource.router,
     prefix="/api",
