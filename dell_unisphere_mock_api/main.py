@@ -52,7 +52,7 @@ async def csrf_middleware(request: Request, call_next) -> Response:
 app.include_router(auth.router, prefix="/api", tags=["Auth"])
 app.include_router(
     job.router,
-    prefix="/api",
+    prefix="/api/types/job",
     tags=["Job"],
     dependencies=[Depends(get_current_user)],
 )

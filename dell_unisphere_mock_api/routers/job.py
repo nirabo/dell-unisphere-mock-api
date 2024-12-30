@@ -4,7 +4,7 @@ from dell_unisphere_mock_api.controllers.job_controller import JobController
 from dell_unisphere_mock_api.core.auth import get_current_user
 from dell_unisphere_mock_api.schemas.job import Job, JobCreate
 
-router = APIRouter(prefix="/api/types/job", tags=["Job"])
+router = APIRouter(prefix="", tags=["Job"])
 controller = JobController()
 
 
