@@ -83,7 +83,7 @@ class TestTutorial52:
         assert names == sorted(names, reverse=True)
 
     def test_async_request(self):
-        """Test making an asynchronous request"""
+        """Test making an asynchronous request."""
         # Create a pool in async mode
         pool_data = {"name": "async_test_pool", "type": 1, "sizeTotal": 1000000000}
         response = self.client.post(
