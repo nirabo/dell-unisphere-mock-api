@@ -16,6 +16,7 @@ def get_auth_headers():
 
 
 def test_create_disk(client, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     """Test creating a new disk."""
     disk_data = {
         "name": "test_disk",
@@ -27,7 +28,7 @@ def test_create_disk(client, auth_headers):
         "firmware_version": "1.0.0",
     }
 
-    response = client.post("/api/types/disk/instances", json=disk_data, headers=auth_headers)
+    response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == disk_data["name"]
@@ -35,6 +36,7 @@ def test_create_disk(client, auth_headers):
 
 
 def test_create_disk_invalid_type(client, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     """Test creating a disk with invalid disk type."""
     disk_data = {
         "name": "test_disk",
@@ -44,11 +46,12 @@ def test_create_disk_invalid_type(client, auth_headers):
         "slot_number": 1,
     }
 
-    response = client.post("/api/types/disk/instances", json=disk_data, headers=auth_headers)
+    response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     assert response.status_code == 422  # Validation error
 
 
 def test_get_disk(client, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     """Test getting a specific disk."""
     # First create a disk
     disk_data = {
@@ -58,11 +61,11 @@ def test_get_disk(client, auth_headers):
         "size": 1000000,
         "slot_number": 1,
     }
-    create_response = client.post("/api/types/disk/instances", json=disk_data, headers=auth_headers)
+    create_response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     disk_id = create_response.json()["id"]
 
     # Then get it
-    response = client.get(f"/api/types/disk/instances/{disk_id}", headers=auth_headers)
+    response = client.get(f"/api/types/disk/instances/{disk_id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == disk_id
@@ -70,13 +73,15 @@ def test_get_disk(client, auth_headers):
 
 
 def test_list_disks(client, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     """Test listing all disks."""
-    response = client.get("/api/types/disk/instances", headers=auth_headers)
+    response = client.get("/api/types/disk/instances", headers=headers)
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
 
 def test_update_disk(client, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     """Test updating a disk."""
     # First create a disk
     disk_data = {
@@ -86,7 +91,7 @@ def test_update_disk(client, auth_headers):
         "size": 1000000,
         "slot_number": 1,
     }
-    create_response = client.post("/api/types/disk/instances", json=disk_data, headers=auth_headers)
+    create_response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     disk_id = create_response.json()["id"]
 
     # Then update it
@@ -95,7 +100,7 @@ def test_update_disk(client, auth_headers):
         "description": "Updated description",
         "firmware_version": "2.0.0",
     }
-    response = client.patch(f"/api/types/disk/instances/{disk_id}", json=update_data, headers=auth_headers)
+    response = client.patch(f"/api/types/disk/instances/{disk_id}", json=update_data, headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == update_data["name"]
@@ -126,6 +131,7 @@ def test_delete_disk(client, auth_headers):
 
 
 def test_get_disks_by_pool(client, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     """Test getting disks by pool ID."""
     # First create a disk with a pool ID
     disk_data = {
@@ -136,10 +142,10 @@ def test_get_disks_by_pool(client, auth_headers):
         "slot_number": 1,
         "pool_id": "test_pool",
     }
-    client.post("/api/types/disk/instances", json=disk_data, headers=auth_headers)
+    client.post("/api/types/disk/instances", json=disk_data, headers=headers)
 
     # Get disks by pool
-    response = client.get("/api/types/disk/instances/byPool/test_pool", headers=auth_headers)
+    response = client.get("/api/types/disk/instances/byPool/test_pool", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) > 0
@@ -147,6 +153,7 @@ def test_get_disks_by_pool(client, auth_headers):
 
 
 def test_get_disks_by_disk_group(client, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     """Test getting disks by disk group ID."""
     # First create a disk with a disk group ID
     disk_data = {
@@ -157,10 +164,10 @@ def test_get_disks_by_disk_group(client, auth_headers):
         "slot_number": 1,
         "disk_group_id": "test_group",
     }
-    client.post("/api/types/disk/instances", json=disk_data, headers=auth_headers)
+    client.post("/api/types/disk/instances", json=disk_data, headers=headers)
 
     # Get disks by disk group
-    response = client.get("/api/types/disk/instances/byDiskGroup/test_group", headers=auth_headers)
+    response = client.get("/api/types/disk/instances/byDiskGroup/test_group", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data) > 0
