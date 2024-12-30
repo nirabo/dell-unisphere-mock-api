@@ -18,12 +18,67 @@ from dell_unisphere_mock_api.routers import (
     user,
 )
 
+# Store the original openapi function
+original_openapi = FastAPI.openapi
+
+# Module-level variable to store the OpenAPI schema
+_openapi_schema = None
+
+
+def custom_openapi():
+    global _openapi_schema
+
+    if _openapi_schema:
+        return _openapi_schema
+
+    # Get the original schema
+    openapi_schema = original_openapi(app)
+
+    # Add X-EMC-REST-CLIENT header to security scheme
+    openapi_schema["components"]["securitySchemes"]["basicAuth"] = {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Basic authentication with X-EMC-REST-CLIENT header",
+        "x-emc-rest-client": {"type": "apiKey", "in": "header", "name": "X-EMC-REST-CLIENT", "value": "true"},
+    }
+
+    # Apply the security scheme to all operations
+    for path in openapi_schema["paths"].values():
+        for operation in path.values():
+            if "security" not in operation:
+                operation["security"] = [{"basicAuth": []}]
+
+    _openapi_schema = openapi_schema
+    return _openapi_schema
+
+
 app = FastAPI(
     title="Mock Unity Unisphere API",
     description="A mock implementation of Dell Unity Unisphere Management REST API.",
     version="1.0.0",
-    swagger_ui_parameters={"persistAuthorization": True},  # Keep authentication between page reloads
+    swagger_ui_parameters={
+        "persistAuthorization": True,  # Keep authentication between page reloads
+        "requestInterceptor": """(req) => {
+            // Add X-EMC-REST-CLIENT header to all requests
+            req.headers['X-EMC-REST-CLIENT'] = 'true';
+
+            // Add Authorization header if credentials are provided
+            const auth = localStorage.getItem('auth');
+            if (auth) {
+                const {username, password} = JSON.parse(auth);
+                req.headers['Authorization'] = 'Basic ' + btoa(username + ':' + password);
+            }
+            return req;
+        }""",
+        "initOAuth": {
+            "clientId": "unisphere-client",
+            "appName": "Unisphere Mock API",
+            "usePkceWithAuthorizationCodeGrant": True,
+        },
+    },
 )
+
+app.openapi = custom_openapi
 
 # Configure CORS
 app.add_middleware(

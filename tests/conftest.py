@@ -57,6 +57,6 @@ def auth_headers(test_client):
     headers = {
         "Authorization": f"Basic {credentials}",
         "X-EMC-REST-CLIENT": "true",  # Make sure this matches case exactly
-        "EMC-CSRF-TOKEN": "test-csrf-token"
+        "EMC-CSRF-TOKEN": "test-csrf-token",
     }
     return headers, {}  # Return headers and empty cookies dict

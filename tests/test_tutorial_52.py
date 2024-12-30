@@ -18,7 +18,7 @@ class TestTutorial52:
             "/api/auth",
             headers={
                 "X-EMC-REST-CLIENT": "true",  # Make sure this matches case exactly
-                "Authorization": self.auth_header
+                "Authorization": self.auth_header,
             },
         )
         assert response.status_code == 200

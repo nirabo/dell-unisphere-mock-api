@@ -14,7 +14,7 @@ export PRINT_HELP_PYSCRIPT
 
 VENV = .venv
 TEST_VENV = .venv.test
-PYTHON = python3
+PYTHON = python3.12
 PIP = pip3
 TEST_VENV_BIN = $(TEST_VENV)/bin
 VENV_BIN = $(VENV)/bin
