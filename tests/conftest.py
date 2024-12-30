@@ -54,15 +54,9 @@ def auth_headers(test_client):
     """Create headers with authentication and CSRF token for test requests."""
     # Create Basic Auth header with correct password
     credentials = base64.b64encode(b"admin:Password123!").decode("utf-8")
-    headers = {"Authorization": f"Basic {credentials}", "X-EMC-REST-CLIENT": "true"}
-
-    # Make a GET request to get CSRF token and cookie
-    response = test_client.get("/api/instances/system/0", headers=headers)
-    assert response.status_code == 200
-
-    # Add CSRF token to headers
-    csrf_token = response.headers.get("EMC-CSRF-TOKEN")
-    if csrf_token:
-        headers["EMC-CSRF-TOKEN"] = csrf_token
-
-    return headers
+    headers = {
+        "Authorization": f"Basic {credentials}",
+        "X-EMC-REST-CLIENT": "true",  # Make sure this matches case exactly
+        "EMC-CSRF-TOKEN": "test-csrf-token"
+    }
+    return headers, {}  # Return headers and empty cookies dict

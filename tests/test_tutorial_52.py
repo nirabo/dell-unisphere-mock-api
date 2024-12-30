@@ -11,19 +11,19 @@ class TestTutorial52:
         self.client = TestClient(app)
         # Create Basic Auth header
         credentials = base64.b64encode(b"admin:Password123!").decode("utf-8")
-        auth_header = f"Basic {credentials}"
+        self.auth_header = f"Basic {credentials}"
 
         # Login to get the cookie and CSRF token
         response = self.client.post(
             "/api/auth",
-            headers={"X-EMC-REST-CLIENT": "true", "Authorization": auth_header},
+            headers={
+                "X-EMC-REST-CLIENT": "true",  # Make sure this matches case exactly
+                "Authorization": self.auth_header
+            },
         )
         assert response.status_code == 200
         self.csrf_token = response.headers.get("EMC-CSRF-TOKEN")
-        # Set cookies on client instance
-        for name, value in response.cookies.items():
-            self.client.cookies.set(name, value)
-        self.auth_header = auth_header
+        self.cookies = response.cookies
 
     def test_get_pools_basic(self):
         """Test the basic pool query from the tutorial"""

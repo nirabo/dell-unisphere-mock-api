@@ -1,5 +1,5 @@
 import pytest
-from fastapi import HTTPException, status, Request
+from fastapi import HTTPException, status, Request, Response
 from fastapi.security import HTTPBasicCredentials
 
 from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_token, verify_password
