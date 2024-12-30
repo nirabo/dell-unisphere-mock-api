@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -5,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from dell_unisphere_mock_api.controllers.pool_controller import PoolController
 from dell_unisphere_mock_api.core.auth import get_current_user
+from dell_unisphere_mock_api.core.config import settings
 from dell_unisphere_mock_api.schemas.pool import Pool, PoolCreate, PoolUpdate
 
 router = APIRouter()
@@ -73,8 +75,8 @@ async def list_pools(
         entries = [{"content": pool.model_dump()} for pool in pools]
 
     response_data = {
-        "@base": "https://example.com/api/types/pool/instances",  # This should be configured properly
-        "updated": "2024-12-23T12:59:46+02:00",  # Use actual current time
+        "@base": f"{settings.API_BASE_URL}/types/pool/instances",
+        "updated": datetime.now(timezone.utc).isoformat(),
         "links": [{"rel": "self", "href": f"&page={page}"}],
         "entries": entries,
     }

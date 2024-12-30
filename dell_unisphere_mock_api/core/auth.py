@@ -39,8 +39,8 @@ async def get_current_user(
     credentials: HTTPBasicCredentials = Depends(security),
 ) -> Dict[str, str]:
     """Validate credentials and return the current user."""
-    # Check if X-EMC-REST-CLIENT header is present
-    if request.headers.get("X-EMC-REST-CLIENT") != "true":
+    # Skip X-EMC-REST-CLIENT header check for Swagger UI
+    if not request.url.path.startswith("/docs") and request.headers.get("X-EMC-REST-CLIENT") != "true":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="X-EMC-REST-CLIENT header is required",
@@ -56,7 +56,13 @@ async def get_current_user(
         )
 
     # Set cookie for subsequent requests
-    response.set_cookie(key="mod_sec_emc", value=secrets.token_urlsafe(32), httponly=True, secure=True)
+    response.set_cookie(
+        key="mod_sec_emc",
+        value=secrets.token_urlsafe(32),
+        httponly=True,
+        secure=True,
+        samesite="lax",  # Added for better security with Swagger UI
+    )
 
     # Generate and set CSRF token
     csrf_token = generate_csrf_token()

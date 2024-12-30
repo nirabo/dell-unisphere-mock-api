@@ -25,7 +25,7 @@ class MockResponse:
 
 def test_set_cookie_without_samesite():
     response = MockResponse()
-    response.set_cookie('session_id', '12345')
+    response.set_cookie("session_id", "12345")
 
 
 # Original line (assuming it's something like this)
