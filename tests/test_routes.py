@@ -22,10 +22,11 @@ class TestStorageResourceRoutes:
         }
 
     def test_create_storage_resource(self, test_client, auth_headers, sample_resource_data):
+        headers, _ = auth_headers  # Unpack the tuple
         response = test_client.post(
             "/api/types/storageResource/instances",
             json=sample_resource_data,
-            headers=auth_headers,
+            headers=headers,  # Use only the headers
         )
         assert response.status_code == 201
         data = response.json()
@@ -36,30 +37,33 @@ class TestStorageResourceRoutes:
         assert self.last_created_resource is not None
 
     def test_get_storage_resource(self, test_client, auth_headers, sample_resource_data):
+        headers, _ = auth_headers  # Unpack the tuple
         # First create a resource
         self.test_create_storage_resource(test_client, auth_headers, sample_resource_data)
 
         # Then get it
         response = test_client.get(
             f"/api/types/storageResource/instances/{self.last_created_resource['id']}",
-            headers=auth_headers,
+            headers=headers,  # Use only the headers
         )
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == self.last_created_resource["id"]
 
     def test_list_storage_resources(self, test_client, auth_headers, sample_resource_data):
+        headers, _ = auth_headers  # Unpack the tuple
         # Create a resource first
         self.test_create_storage_resource(test_client, auth_headers, sample_resource_data)
 
         # List all resources
-        response = test_client.get("/api/types/storageResource/instances", headers=auth_headers)
+        response = test_client.get("/api/types/storageResource/instances", headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert len(data) > 0
         assert isinstance(data, list)
 
     def test_update_storage_resource(self, test_client, auth_headers, sample_resource_data):
+        headers, _ = auth_headers  # Unpack the tuple
         # First create a resource
         self.test_create_storage_resource(test_client, auth_headers, sample_resource_data)
 
@@ -71,7 +75,7 @@ class TestStorageResourceRoutes:
         response = test_client.patch(
             f"/api/types/storageResource/instances/{self.last_created_resource['id']}",
             json=update_data,
-            headers=auth_headers,
+            headers=headers,  # Use only the headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -79,24 +83,26 @@ class TestStorageResourceRoutes:
         assert data["isCompressionEnabled"] == update_data["isCompressionEnabled"]
 
     def test_delete_storage_resource(self, test_client, auth_headers, sample_resource_data):
+        headers, _ = auth_headers  # Unpack the tuple
         # First create a resource
         self.test_create_storage_resource(test_client, auth_headers, sample_resource_data)
 
         # Delete it
         response = test_client.delete(
             f"/api/types/storageResource/instances/{self.last_created_resource['id']}",
-            headers=auth_headers,
+            headers=headers,  # Use only the headers
         )
         assert response.status_code == 200
 
         # Verify it's gone
         response = test_client.get(
             f"/api/types/storageResource/instances/{self.last_created_resource['id']}",
-            headers=auth_headers,
+            headers=headers,  # Use only the headers
         )
         assert response.status_code == 404
 
     def test_host_access_management(self, test_client, auth_headers, sample_resource_data):
+        headers, _ = auth_headers  # Unpack the tuple
         # First create a resource
         self.test_create_storage_resource(test_client, auth_headers, sample_resource_data)
 
@@ -105,7 +111,7 @@ class TestStorageResourceRoutes:
         response = test_client.post(
             f"/api/types/storageResource/instances/{self.last_created_resource['id']}/action/modifyHostAccess",
             json=host_access,
-            headers=auth_headers,
+            headers=headers,  # Use only the headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -132,10 +138,11 @@ class TestFilesystemRoutes:
         }
 
     def test_create_filesystem(self, test_client, auth_headers, sample_filesystem_data):
+        headers, _ = auth_headers  # Unpack the tuple
         response = test_client.post(
             "/api/types/filesystem/instances",
             json=sample_filesystem_data,
-            headers=auth_headers,
+            headers=headers,  # Use only the headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -145,13 +152,14 @@ class TestFilesystemRoutes:
         assert self.last_created_filesystem is not None
 
     def test_get_filesystem(self, test_client, auth_headers, sample_filesystem_data):
+        headers, _ = auth_headers  # Unpack the tuple
         # First create a filesystem
         self.test_create_filesystem(test_client, auth_headers, sample_filesystem_data)
 
         # Then get it
         response = test_client.get(
             f"/api/instances/filesystem/{self.last_created_filesystem['id']}",
-            headers=auth_headers,
+            headers=headers,  # Use only the headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -174,7 +182,8 @@ class TestNasServerRoutes:
         }
 
     def test_create_nas_server(self, test_client, auth_headers, sample_nas_data):
-        response = test_client.post("/api/types/nasServer/instances", json=sample_nas_data, headers=auth_headers)
+        headers, _ = auth_headers  # Unpack the tuple
+        response = test_client.post("/api/types/nasServer/instances", json=sample_nas_data, headers=headers)
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == sample_nas_data["name"]
@@ -183,13 +192,14 @@ class TestNasServerRoutes:
         assert self.last_created_nas is not None
 
     def test_get_nas_server(self, test_client, auth_headers, sample_nas_data):
+        headers, _ = auth_headers  # Unpack the tuple
         # First create a NAS server
         self.test_create_nas_server(test_client, auth_headers, sample_nas_data)
 
         # Then get it
         response = test_client.get(
             f"/api/instances/nasServer/{self.last_created_nas['id']}",
-            headers=auth_headers,
+            headers=headers,  # Use only the headers
         )
         assert response.status_code == 200
         data = response.json()
