@@ -41,14 +41,15 @@ def sample_lun_data():
 
 
 def test_create_lun(test_client, sample_pool_data, sample_lun_data, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert pool_response.status_code == 201
     pool_id = pool_response.json()["id"]
     sample_lun_data["pool_id"] = pool_id
 
     # Then create a LUN
-    response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=auth_headers)
+    response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=headers)
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == sample_lun_data["name"]
@@ -59,19 +60,20 @@ def test_create_lun(test_client, sample_pool_data, sample_lun_data, auth_headers
 
 
 def test_get_lun(test_client, sample_pool_data, sample_lun_data, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert pool_response.status_code == 201
     pool_id = pool_response.json()["id"]
     sample_lun_data["pool_id"] = pool_id
 
     # Then create a LUN
-    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=headers)
     assert create_response.status_code == 201
     lun_id = create_response.json()["id"]
 
     # Then get it by ID
-    response = test_client.get(f"/api/instances/lun/{lun_id}", headers=auth_headers)
+    response = test_client.get(f"/api/instances/lun/{lun_id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == lun_id
@@ -79,36 +81,38 @@ def test_get_lun(test_client, sample_pool_data, sample_lun_data, auth_headers):
 
 
 def test_get_lun_by_name(test_client, sample_pool_data, sample_lun_data, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert pool_response.status_code == 201
     pool_id = pool_response.json()["id"]
     sample_lun_data["pool_id"] = pool_id
 
     # Then create a LUN
-    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=headers)
     assert create_response.status_code == 201
 
     # Then get it by name
-    response = test_client.get(f"/api/instances/lun/name:{sample_lun_data['name']}", headers=auth_headers)
+    response = test_client.get(f"/api/instances/lun/name:{sample_lun_data['name']}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == sample_lun_data["name"]
 
 
 def test_list_luns(test_client, sample_pool_data, sample_lun_data, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert pool_response.status_code == 201
     pool_id = pool_response.json()["id"]
     sample_lun_data["pool_id"] = pool_id
 
     # Create a LUN
-    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=headers)
     assert create_response.status_code == 201
 
     # List all LUNs
-    response = test_client.get("/api/types/lun/instances", headers=auth_headers)
+    response = test_client.get("/api/types/lun/instances", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
@@ -116,18 +120,19 @@ def test_list_luns(test_client, sample_pool_data, sample_lun_data, auth_headers)
 
 
 def test_get_luns_by_pool(test_client, sample_pool_data, sample_lun_data, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert pool_response.status_code == 201
     pool_id = pool_response.json()["id"]
     sample_lun_data["pool_id"] = pool_id
 
     # Create a LUN
-    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=headers)
     assert create_response.status_code == 201
 
     # Get LUNs by pool
-    response = test_client.get(f"/api/types/lun/instances?filter=pool_id eq '{pool_id}'", headers=auth_headers)
+    response = test_client.get(f"/api/types/lun/instances?filter=pool_id eq '{pool_id}'", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
@@ -136,14 +141,15 @@ def test_get_luns_by_pool(test_client, sample_pool_data, sample_lun_data, auth_h
 
 
 def test_modify_lun(test_client, sample_pool_data, sample_lun_data, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert pool_response.status_code == 201
     pool_id = pool_response.json()["id"]
     sample_lun_data["pool_id"] = pool_id
 
     # Create a LUN
-    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=headers)
     assert create_response.status_code == 201
     lun_id = create_response.json()["id"]
 
@@ -152,7 +158,7 @@ def test_modify_lun(test_client, sample_pool_data, sample_lun_data, auth_headers
         "description": "Updated LUN description",
         "isCompressionEnabled": True,
     }
-    response = test_client.patch(f"/api/instances/lun/{lun_id}", json=update_data, headers=auth_headers)
+    response = test_client.patch(f"/api/instances/lun/{lun_id}", json=update_data, headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["description"] == update_data["description"]
@@ -160,41 +166,43 @@ def test_modify_lun(test_client, sample_pool_data, sample_lun_data, auth_headers
 
 
 def test_delete_lun(test_client, sample_pool_data, sample_lun_data, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert pool_response.status_code == 201
     pool_id = pool_response.json()["id"]
     sample_lun_data["pool_id"] = pool_id
 
     # Create a LUN
-    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=headers)
     assert create_response.status_code == 201
     lun_id = create_response.json()["id"]
 
     # Delete the LUN
-    response = test_client.delete(f"/api/instances/lun/{lun_id}", headers=auth_headers)
+    response = test_client.delete(f"/api/instances/lun/{lun_id}", headers=headers)
     assert response.status_code == 204
 
     # Verify it's gone
-    get_response = test_client.get(f"/api/instances/lun/{lun_id}", headers=auth_headers)
+    get_response = test_client.get(f"/api/instances/lun/{lun_id}", headers=headers)
     assert get_response.status_code == 404
 
 
 def test_delete_lun_by_name(test_client, sample_pool_data, sample_lun_data, auth_headers):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    pool_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert pool_response.status_code == 201
     pool_id = pool_response.json()["id"]
     sample_lun_data["pool_id"] = pool_id
 
     # Create a LUN
-    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/lun/instances", json=sample_lun_data, headers=headers)
     assert create_response.status_code == 201
 
     # Delete the LUN by name
-    response = test_client.delete(f"/api/instances/lun/name:{sample_lun_data['name']}", headers=auth_headers)
+    response = test_client.delete(f"/api/instances/lun/name:{sample_lun_data['name']}", headers=headers)
     assert response.status_code == 204
 
     # Verify it's gone
-    get_response = test_client.get(f"/api/instances/lun/name:{sample_lun_data['name']}", headers=auth_headers)
+    get_response = test_client.get(f"/api/instances/lun/name:{sample_lun_data['name']}", headers=headers)
     assert get_response.status_code == 404
