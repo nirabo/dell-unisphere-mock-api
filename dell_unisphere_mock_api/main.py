@@ -34,6 +34,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Middleware to verify CSRF token for POST, PATCH and DELETE requests
 @app.middleware("http")
 async def csrf_middleware(request: Request, call_next) -> Response:
@@ -45,6 +46,7 @@ async def csrf_middleware(request: Request, call_next) -> Response:
             return Response(content=str(e.detail), status_code=e.status_code, headers=e.headers)
     response = await call_next(request)
     return response
+
 
 # Configure routers
 app.include_router(auth.router, prefix="/api", tags=["Auth"])
