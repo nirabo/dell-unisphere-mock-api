@@ -122,6 +122,32 @@ async def get_system_info() -> Dict:
     }
 
 
+@app.post("/api/types/job/instances", response_model=Job, status_code=202)
+async def create_job(job_data: JobCreate, current_user: Dict = Depends(get_current_user)):
+    """Create a new job for aggregated operations"""
+    job_id = str(uuid4())
+    job = Job(
+        id=job_id,
+        state=JobState.PENDING,
+        description=job_data.description,
+        tasks=job_data.tasks
+    )
+    jobs[job_id] = job
+    
+    # Here you would implement the actual job processing logic
+    # For now, we'll just mark it as completed
+    job.state = JobState.COMPLETED
+    job.progressPct = 100.0
+    
+    return job
+
+@app.get("/api/instances/job/{job_id}", response_model=Job)
+async def get_job_status(job_id: str, current_user: Dict = Depends(get_current_user)):
+    """Get the status of a job"""
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return jobs[job_id]
+
 if __name__ == "__main__":
     import uvicorn
 
