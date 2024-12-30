@@ -50,10 +50,32 @@ class Job(BaseModel):
     tasks: List[JobTask]
     progressPct: Optional[float] = None
     errorMessage: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
 
 # In-memory store for jobs
 jobs: Dict[str, Job] = {}
+
+
+async def process_job(job: Job):
+    """Simulate job processing with progress updates"""
+    from datetime import datetime
+    import asyncio
+    
+    job.state = JobState.RUNNING
+    job.created_at = datetime.utcnow().isoformat()
+    
+    # Simulate task processing
+    total_tasks = len(job.tasks)
+    for i, task in enumerate(job.tasks):
+        await asyncio.sleep(1)  # Simulate task processing time
+        job.progressPct = ((i + 1) / total_tasks) * 100
+        job.updated_at = datetime.utcnow().isoformat()
+    
+    job.state = JobState.COMPLETED
+    job.progressPct = 100.0
+    job.updated_at = datetime.utcnow().isoformat()
 
 app = FastAPI(
     title="Mock Unity Unisphere API",
@@ -157,14 +179,19 @@ async def get_system_info() -> Dict:
 async def create_job(job_data: JobCreate, current_user: Dict = Depends(get_current_user)):
     """Create a new job for aggregated operations"""
     job_id = str(uuid4())
-    job = Job(id=job_id, state=JobState.PENDING, description=job_data.description, tasks=job_data.tasks)
+    job = Job(
+        id=job_id,
+        state=JobState.PENDING,
+        description=job_data.description,
+        tasks=job_data.tasks
+    )
     jobs[job_id] = job
-
-    # Here you would implement the actual job processing logic
-    # For now, we'll just mark it as completed
-    job.state = JobState.COMPLETED
-    job.progressPct = 100.0
-
+    
+    # Start job processing in background
+    from fastapi import BackgroundTasks
+    background_tasks = BackgroundTasks()
+    background_tasks.add_task(process_job, job)
+    
     return job
 
 
