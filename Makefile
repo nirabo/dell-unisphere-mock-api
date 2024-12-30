@@ -38,7 +38,7 @@ clean-build: ## remove build artifacts
 	rm -rf dist/
 	rm -rf .eggs/
 	find . -name '*.egg-info' -exec rm -rf {} +
-	find . -name '*.egg' -exec rm -f {} +
+	find . -name '*.egg' -exec rm -rf {} +
 
 clean-pyc: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
@@ -89,4 +89,4 @@ release: dist ## package and upload a release
 	$(PYTHON) -m twine upload dist/*
 
 run: venv ## run development server
-	$(VENV_BIN)/python -m dell_unisphere_mock_api
+	$(VENV_BIN)/python -m dell_unisphere_mock_api --reload
