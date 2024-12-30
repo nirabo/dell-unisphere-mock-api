@@ -4,7 +4,6 @@ from typing import Dict, List
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
-from dell_unisphere_mock_api.schemas.job import Job, JobCreate, JobState
 from fastapi.middleware.cors import CORSMiddleware
 
 from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_token
@@ -20,6 +19,7 @@ from dell_unisphere_mock_api.routers import (
     storage_resource,
     user,
 )
+from dell_unisphere_mock_api.schemas.job import Job, JobCreate, JobState
 
 # In-memory store for jobs
 jobs: Dict[str, Job] = {}
@@ -126,20 +126,16 @@ async def get_system_info() -> Dict:
 async def create_job(job_data: JobCreate, current_user: Dict = Depends(get_current_user)):
     """Create a new job for aggregated operations"""
     job_id = str(uuid4())
-    job = Job(
-        id=job_id,
-        state=JobState.PENDING,
-        description=job_data.description,
-        tasks=job_data.tasks
-    )
+    job = Job(id=job_id, state=JobState.PENDING, description=job_data.description, tasks=job_data.tasks)
     jobs[job_id] = job
-    
+
     # Here you would implement the actual job processing logic
     # For now, we'll just mark it as completed
     job.state = JobState.COMPLETED
     job.progressPct = 100.0
-    
+
     return job
+
 
 @app.get("/api/instances/job/{job_id}", response_model=Job)
 async def get_job_status(job_id: str, current_user: Dict = Depends(get_current_user)):
@@ -147,6 +143,7 @@ async def get_job_status(job_id: str, current_user: Dict = Depends(get_current_u
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found")
     return jobs[job_id]
+
 
 if __name__ == "__main__":
     import uvicorn
