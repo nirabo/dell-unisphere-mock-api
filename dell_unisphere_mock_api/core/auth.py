@@ -47,25 +47,23 @@ async def get_current_user(
     is_swagger_request = (
         request.url.path.startswith("/docs") or 
         request.url.path.startswith("/openapi.json") or
-        request.headers.get("Referer", "").endswith("/docs")
+        request.headers.get("referer", "").endswith("/docs")
     )
     
-    # Create mutable copy of headers
-    headers = dict(request.headers)
-    
-    # Add X-EMC-REST-CLIENT header for Swagger UI requests
-    if is_swagger_request:
-        headers["X-EMC-REST-CLIENT"] = "true"
-    
-    # Check header for non-Swagger requests
-    if not is_swagger_request and headers.get("X-EMC-REST-CLIENT") != "true":
+    # Check header case-insensitively
+    has_emc_header = False
+    for header_name, header_value in request.headers.items():
+        if header_name.lower() == "x-emc-rest-client" and header_value.lower() == "true":
+            has_emc_header = True
+            break
+
+    if not is_swagger_request and not has_emc_header:
         print("Missing X-EMC-REST-CLIENT header")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="X-EMC-REST-CLIENT header is required",
             headers={"WWW-Authenticate": "Basic"},
         )
-    
     # Create a new request with modified headers
     request._headers = headers
     
