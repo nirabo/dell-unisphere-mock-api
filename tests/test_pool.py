@@ -93,30 +93,32 @@ def test_modify_pool(test_client, auth_headers, sample_pool_data):
     assert data["alertThreshold"] == update_data["alertThreshold"]
 
 
-def test_delete_pool(test_client, sample_pool_data, auth_headers):
+def test_delete_pool(test_client, auth_headers, sample_pool_data):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert create_response.status_code == 201
     pool_id = create_response.json()["id"]
 
     # Then delete it
-    response = test_client.delete(f"/api/instances/pool/{pool_id}", headers=auth_headers)
+    response = test_client.delete(f"/api/instances/pool/{pool_id}", headers=headers)
     assert response.status_code == 204
 
     # Verify it's gone
-    get_response = test_client.get(f"/api/instances/pool/{pool_id}", headers=auth_headers)
+    get_response = test_client.get(f"/api/instances/pool/{pool_id}", headers=headers)
     assert get_response.status_code == 404
 
 
-def test_delete_pool_by_name(test_client, sample_pool_data, auth_headers):
+def test_delete_pool_by_name(test_client, auth_headers, sample_pool_data):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert create_response.status_code == 201
 
     # Delete the pool by name
-    response = test_client.delete(f"/api/instances/pool/name:{sample_pool_data['name']}", headers=auth_headers)
+    response = test_client.delete(f"/api/instances/pool/name:{sample_pool_data['name']}", headers=headers)
     assert response.status_code == 204
 
     # Verify it's gone
-    get_response = test_client.get(f"/api/instances/pool/name:{sample_pool_data['name']}", headers=auth_headers)
+    get_response = test_client.get(f"/api/instances/pool/name:{sample_pool_data['name']}", headers=headers)
     assert get_response.status_code == 404
