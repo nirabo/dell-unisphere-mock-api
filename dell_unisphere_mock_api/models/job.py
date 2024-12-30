@@ -11,7 +11,7 @@ class JobModel:
 
     def create_job(self, job_data: JobCreate) -> Job:
         """Create a new job."""
-        job_id = str(uuid4())
+        job_id = f"job_{str(uuid4())}"
         job = Job(
             id=job_id,
             state=JobState.PENDING,

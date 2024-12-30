@@ -61,7 +61,7 @@ def test_get_job(sample_job_data, auth_headers):
     job_id = create_response.json()["id"]
     
     response = client.get(
-        f"/api/types/job/instances/{job_id}",
+        f"/api/instances/job/{job_id}",
         headers=headers,
         cookies=cookies
     )
@@ -96,14 +96,14 @@ def test_delete_job(sample_job_data, auth_headers):
     job_id = create_response.json()["id"]
     
     response = client.delete(
-        f"/api/types/job/instances/{job_id}",
+        f"/api/instances/job/{job_id}",
         headers=headers,
         cookies=cookies
     )
     assert response.status_code == 204
     
     get_response = client.get(
-        f"/api/types/job/instances/{job_id}",
+        f"/api/instances/job/{job_id}",
         headers=headers,
         cookies=cookies
     )
