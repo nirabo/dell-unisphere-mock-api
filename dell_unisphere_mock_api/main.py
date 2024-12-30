@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Dict, List, Optional
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -56,6 +56,25 @@ class Job(BaseModel):
 
 # In-memory store for jobs
 jobs: Dict[str, Job] = {}
+
+async def process_job(job: Job):
+    """Simulate job processing with progress updates"""
+    import asyncio
+    from datetime import datetime
+
+    job.state = JobState.RUNNING
+    job.created_at = datetime.utcnow().isoformat()
+
+    # Simulate task processing
+    total_tasks = len(job.tasks)
+    for i, _task in enumerate(job.tasks):
+        await asyncio.sleep(1)  # Simulate task processing time
+        job.progressPct = ((i + 1) / total_tasks) * 100
+        job.updated_at = datetime.utcnow().isoformat()
+
+    job.state = JobState.COMPLETED
+    job.progressPct = 100.0
+    job.updated_at = datetime.utcnow().isoformat()
 
 
 async def process_job(job: Job):
@@ -177,16 +196,22 @@ async def get_system_info() -> Dict:
 
 
 @app.post("/api/types/job/instances", response_model=Job, status_code=202)
-async def create_job(job_data: JobCreate, current_user: Dict = Depends(get_current_user)):
+async def create_job(
+    job_data: JobCreate, 
+    background_tasks: BackgroundTasks,
+    current_user: Dict = Depends(get_current_user)
+):
     """Create a new job for aggregated operations"""
     job_id = str(uuid4())
-    job = Job(id=job_id, state=JobState.PENDING, description=job_data.description, tasks=job_data.tasks)
+    job = Job(
+        id=job_id,
+        state=JobState.PENDING,
+        description=job_data.description,
+        tasks=job_data.tasks
+    )
     jobs[job_id] = job
 
     # Start job processing in background
-    from fastapi import BackgroundTasks
-
-    background_tasks = BackgroundTasks()
     background_tasks.add_task(process_job, job)
 
     return job
