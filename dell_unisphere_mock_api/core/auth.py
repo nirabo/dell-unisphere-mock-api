@@ -64,10 +64,6 @@ async def get_current_user(
             detail="X-EMC-REST-CLIENT header is required",
             headers={"WWW-Authenticate": "Basic"},
         )
-    # Create a new request with modified headers
-    request._headers = headers
-
-    print(f"Modified headers: {headers}")
 
     user = MOCK_USERS.get(credentials.username)
     if not user or not verify_password(credentials.password, user["password"]):
