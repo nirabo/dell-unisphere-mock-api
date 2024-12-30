@@ -1,12 +1,7 @@
 """Main FastAPI application module for Dell Unisphere Mock API."""
 
-from enum import Enum
-from typing import Dict, List, Optional
-from uuid import uuid4
-
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import Depends, FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
 from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_token
 from dell_unisphere_mock_api.routers import (
@@ -22,62 +17,6 @@ from dell_unisphere_mock_api.routers import (
     storage_resource,
     user,
 )
-
-
-class JobTask(BaseModel):
-    name: str
-    object: str
-    action: str
-    parametersIn: Dict
-
-
-class JobCreate(BaseModel):
-    description: str
-    tasks: List[JobTask]
-
-
-class JobState(str, Enum):
-    PENDING = "PENDING"
-    RUNNING = "RUNNING"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-    CANCELLED = "CANCELLED"
-
-
-class Job(BaseModel):
-    id: str
-    state: JobState
-    description: str
-    tasks: List[JobTask]
-    progressPct: Optional[float] = None
-    errorMessage: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-
-# In-memory store for jobs
-jobs: Dict[str, Job] = {}
-
-
-async def process_job(job: Job):
-    """Simulate job processing with progress updates"""
-    import asyncio
-    from datetime import datetime
-
-    job.state = JobState.RUNNING
-    job.created_at = datetime.utcnow().isoformat()
-
-    # Simulate task processing
-    total_tasks = len(job.tasks)
-    for i, _task in enumerate(job.tasks):
-        await asyncio.sleep(1)  # Simulate task processing time
-        job.progressPct = ((i + 1) / total_tasks) * 100
-        job.updated_at = datetime.utcnow().isoformat()
-
-    job.state = JobState.COMPLETED
-    job.progressPct = 100.0
-    job.updated_at = datetime.utcnow().isoformat()
-
 
 app = FastAPI(
     title="Mock Unity Unisphere API",
@@ -95,7 +34,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # Middleware to verify CSRF token for POST, PATCH and DELETE requests
 @app.middleware("http")
 async def csrf_middleware(request: Request, call_next) -> Response:
@@ -107,7 +45,6 @@ async def csrf_middleware(request: Request, call_next) -> Response:
             return Response(content=str(e.detail), status_code=e.status_code, headers=e.headers)
     response = await call_next(request)
     return response
-
 
 # Configure routers
 app.include_router(auth.router, prefix="/api", tags=["Auth"])
@@ -153,8 +90,8 @@ app.include_router(disk.router, prefix="/api", tags=["Disk"], dependencies=[Depe
 app.include_router(user.router, prefix="/api", tags=["User"], dependencies=[Depends(get_current_user)])
 
 
-@app.get("/api/instances/system/0", response_model=Dict)
-async def get_system_details(current_user: Dict = Depends(get_current_user)) -> Dict:
+@app.get("/api/instances/system/0", response_model=dict)
+async def get_system_details(current_user: dict = Depends(get_current_user)) -> dict:
     """Get system details."""
     return {
         "content": {
@@ -170,8 +107,8 @@ async def get_system_details(current_user: Dict = Depends(get_current_user)) -> 
     }
 
 
-@app.get("/api/types/system/0/basicSystemInfo", response_model=Dict)
-async def get_system_info() -> Dict:
+@app.get("/api/types/system/0/basicSystemInfo", response_model=dict)
+async def get_system_info() -> dict:
     """Basic system information. This endpoint is accessible without authentication."""
     return {
         "content": {
@@ -181,29 +118,6 @@ async def get_system_info() -> Dict:
             "softwareVersion": "5.0.0.0.0.001",
         }
     }
-
-
-@app.post("/api/types/job/instances", response_model=Job, status_code=202)
-async def create_job(
-    job_data: JobCreate, background_tasks: BackgroundTasks, current_user: Dict = Depends(get_current_user)
-):
-    """Create a new job for aggregated operations"""
-    job_id = str(uuid4())
-    job = Job(id=job_id, state=JobState.PENDING, description=job_data.description, tasks=job_data.tasks)
-    jobs[job_id] = job
-
-    # Start job processing in background
-    background_tasks.add_task(process_job, job)
-
-    return job
-
-
-@app.get("/api/instances/job/{job_id}", response_model=Job)
-async def get_job_status(job_id: str, current_user: Dict = Depends(get_current_user)):
-    """Get the status of a job"""
-    if job_id not in jobs:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return jobs[job_id]
 
 
 if __name__ == "__main__":
