@@ -1,4 +1,4 @@
   File "/home/lpetrov/projects/sandbox/dell-unisphere-mock-api/dell_unisphere_mock_api/core/auth.py", line 68, in get_current_user
-    request._headers = headers
+    request._headers = dict(request.headers)
                        ^^^^^^^
 NameError: name 'headers' is not defined
