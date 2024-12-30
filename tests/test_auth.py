@@ -69,10 +69,7 @@ def test_verify_csrf_token_post_request():
     request = Request(
         scope={
             "type": "http",
-            "headers": [
-                (b"emc-csrf-token", b"valid_token"),
-                (b"authorization", b"Basic YWRtaW46UGFzc3dvcmQxMjMh")
-            ],
+            "headers": [(b"emc-csrf-token", b"valid_token"), (b"authorization", b"Basic YWRtaW46UGFzc3dvcmQxMjMh")],
             "method": "POST",
             "path": "/api/types/pool/instances",
         }
