@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 from fastapi import HTTPException, Request, Response, status
 from fastapi.security import HTTPBasicCredentials
 from fastapi.testclient import TestClient

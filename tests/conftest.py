@@ -2,11 +2,8 @@ import base64
 from typing import Dict
 
 import pytest
-from fastapi import HTTPException, status
-from fastapi.security import HTTPBasicCredentials
 from fastapi.testclient import TestClient
 
-from dell_unisphere_mock_api.core.auth import MOCK_USERS, get_current_user
 from dell_unisphere_mock_api.main import app
 from dell_unisphere_mock_api.models.disk import DiskModel
 from dell_unisphere_mock_api.models.disk_group import DiskGroupModel

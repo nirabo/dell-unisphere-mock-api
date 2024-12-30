@@ -4,8 +4,8 @@ from fastapi import HTTPException
 from dell_unisphere_mock_api.controllers.filesystem_controller import FilesystemController
 from dell_unisphere_mock_api.controllers.nas_server_controller import NasServerController
 from dell_unisphere_mock_api.controllers.storage_resource_controller import StorageResourceController
-from dell_unisphere_mock_api.schemas.filesystem import FilesystemCreate, FilesystemUpdate
-from dell_unisphere_mock_api.schemas.nas_server import NasServerCreate, NasServerUpdate
+from dell_unisphere_mock_api.schemas.filesystem import FilesystemCreate
+from dell_unisphere_mock_api.schemas.nas_server import NasServerCreate
 from dell_unisphere_mock_api.schemas.storage_resource import StorageResourceCreate, StorageResourceUpdate
 
 
