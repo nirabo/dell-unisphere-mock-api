@@ -39,13 +39,37 @@ async def get_current_user(
     credentials: HTTPBasicCredentials = Depends(security),
 ) -> Dict[str, str]:
     """Validate credentials and return the current user."""
-    # Skip X-EMC-REST-CLIENT header check for Swagger UI
-    if not request.url.path.startswith("/docs") and request.headers.get("X-EMC-REST-CLIENT") != "true":
+    # Debug logging
+    print(f"Request path: {request.url.path}")
+    print(f"Request headers: {dict(request.headers)}")
+    
+    # Skip X-EMC-REST-CLIENT header check for Swagger UI and its API requests
+    is_swagger_request = (
+        request.url.path.startswith("/docs") or 
+        request.url.path.startswith("/openapi.json") or
+        request.headers.get("Referer", "").endswith("/docs")
+    )
+    
+    # Create mutable copy of headers
+    headers = dict(request.headers)
+    
+    # Add X-EMC-REST-CLIENT header for Swagger UI requests
+    if is_swagger_request:
+        headers["X-EMC-REST-CLIENT"] = "true"
+    
+    # Check header for non-Swagger requests
+    if not is_swagger_request and headers.get("X-EMC-REST-CLIENT") != "true":
+        print("Missing X-EMC-REST-CLIENT header")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="X-EMC-REST-CLIENT header is required",
             headers={"WWW-Authenticate": "Basic"},
         )
+    
+    # Create a new request with modified headers
+    request._headers = headers
+    
+    print(f"Modified headers: {headers}")
 
     user = MOCK_USERS.get(credentials.username)
     if not user or not verify_password(credentials.password, user["password"]):
