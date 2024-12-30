@@ -80,9 +80,13 @@ def test_list_jobs(sample_job_data, auth_headers):
         cookies=cookies,
     )
 
-    response = client.get("/api/types/job/instances", headers=headers, cookies=cookies)
+    response = client.get(
+        "/api/types/job/instances",
+        headers=headers,
+        cookies=cookies,
+    )
     assert response.status_code == 200
-    assert len(response.json()) > 0
+    assert len(response.json()["entries"]) > 0
 
 
 def test_delete_job(sample_job_data, auth_headers):

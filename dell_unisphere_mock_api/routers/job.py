@@ -26,10 +26,16 @@ async def get_job(job_id: str, current_user: dict = Depends(get_current_user)):
     return await controller.get_job(job_id)
 
 
-@router.get("/api/types/job/instances", response_model=list[Job])
-async def list_jobs(current_user: dict = Depends(get_current_user)):
+@router.get("/api/types/job/instances", response_model=dict)
+async def list_jobs(
+    current_user: dict = Depends(get_current_user),
+):
     """List all jobs."""
-    return await controller.list_jobs()
+    jobs = await controller.list_jobs()
+    return {
+        "@base": "/api/types/job/instances",
+        "entries": [{"content": job.model_dump()} for job in jobs]
+    }
 
 
 @router.delete("/api/instances/job/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
