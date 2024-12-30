@@ -87,17 +87,17 @@ class TestTutorial52:
         # Create a pool in async mode with all required fields
         pool_data = {
             "name": "async_test_pool",
-            "type": 1,
-            "sizeTotal": 1000000000,
-            "raidType": "RAID5",
-            "poolType": "Performance",
-            "alertThreshold": 80,
-            "isFASTCacheEnabled": False,
-            "isFASTVpScheduleEnabled": True,
-            "isHarvestEnabled": True,
+            "type": 1,  # Pool type (e.g., 1 for Traditional)
+            "sizeTotal": 1000000000,  # Total size in bytes (1GB)
+            "raidType": "RAID5",  # RAID type
+            "poolType": "Performance",  # Pool type (Performance, Capacity, etc.)
+            "alertThreshold": 80,  # Alert threshold percentage
+            "isFASTCacheEnabled": False,  # FAST Cache enabled
+            "isFASTVpScheduleEnabled": True,  # FAST VP schedule enabled
+            "isHarvestEnabled": True,  # Harvesting enabled
         }
         response = self.client.post(
-            "/api/types/pool/instances?timeout=0",
+            "/api/types/pool/instances?timeout=0",  # Async request with timeout=0
             json=pool_data,
             headers={
                 "X-EMC-REST-CLIENT": "true",
@@ -106,8 +106,8 @@ class TestTutorial52:
             },
             cookies=self.cookies,
         )
-        assert response.status_code == 202
-        job_id = response.json()["id"]
+        assert response.status_code == 202  # Expecting 202 Accepted for async request
+        job_id = response.json()["id"]  # Extract job ID from response
 
         # Check job status
         response = self.client.get(
@@ -119,8 +119,8 @@ class TestTutorial52:
             },
             cookies=self.cookies,
         )
-        assert response.status_code == 200
-        assert "state" in response.json()
+        assert response.status_code == 200  # Expecting 200 OK for job status check
+        assert "state" in response.json()  # Verify job state is included in response
 
     def test_aggregated_request(self):
         """Test making an aggregated request"""
