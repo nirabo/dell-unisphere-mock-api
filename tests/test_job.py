@@ -47,7 +47,10 @@ def sample_job_data():
 def test_create_job(sample_job_data, auth_headers):
     headers, cookies = auth_headers
     response = client.post(
-        "/api/types/job/instances", json=sample_job_data.model_dump(), headers=headers, cookies=cookies
+        "/api/types/job/instances",
+        json=sample_job_data.model_dump(),
+        headers=headers,
+        cookies=cookies,
     )
     assert response.status_code == 202
     assert "id" in response.json()
@@ -56,7 +59,10 @@ def test_create_job(sample_job_data, auth_headers):
 def test_get_job(sample_job_data, auth_headers):
     headers, cookies = auth_headers
     create_response = client.post(
-        "/api/types/job/instances", json=sample_job_data.model_dump(), headers=headers, cookies=cookies
+        "/api/types/job/instances",
+        json=sample_job_data.model_dump(),
+        headers=headers,
+        cookies=cookies,
     )
     job_id = create_response.json()["id"]
 
@@ -67,7 +73,12 @@ def test_get_job(sample_job_data, auth_headers):
 
 def test_list_jobs(sample_job_data, auth_headers):
     headers, cookies = auth_headers
-    client.post("/api/types/job/instances", json=sample_job_data.model_dump(), headers=headers, cookies=cookies)
+    client.post(
+        "/api/types/job/instances",
+        json=sample_job_data.model_dump(),
+        headers=headers,
+        cookies=cookies,
+    )
 
     response = client.get("/api/types/job/instances", headers=headers, cookies=cookies)
     assert response.status_code == 200
@@ -77,7 +88,10 @@ def test_list_jobs(sample_job_data, auth_headers):
 def test_delete_job(sample_job_data, auth_headers):
     headers, cookies = auth_headers
     create_response = client.post(
-        "/api/types/job/instances", json=sample_job_data.model_dump(), headers=headers, cookies=cookies
+        "/api/types/job/instances",
+        json=sample_job_data.model_dump(),
+        headers=headers,
+        cookies=cookies,
     )
     job_id = create_response.json()["id"]
 
