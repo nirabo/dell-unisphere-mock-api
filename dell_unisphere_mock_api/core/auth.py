@@ -42,14 +42,14 @@ async def get_current_user(
     # Debug logging
     print(f"Request path: {request.url.path}")
     print(f"Request headers: {dict(request.headers)}")
-    
+
     # Skip X-EMC-REST-CLIENT header check for Swagger UI and its API requests
     is_swagger_request = (
-        request.url.path.startswith("/docs") or 
-        request.url.path.startswith("/openapi.json") or
-        request.headers.get("referer", "").endswith("/docs")
+        request.url.path.startswith("/docs")
+        or request.url.path.startswith("/openapi.json")
+        or request.headers.get("referer", "").endswith("/docs")
     )
-    
+
     # Check header case-insensitively
     has_emc_header = False
     for header_name, header_value in request.headers.items():
@@ -66,7 +66,7 @@ async def get_current_user(
         )
     # Create a new request with modified headers
     request._headers = headers
-    
+
     print(f"Modified headers: {headers}")
 
     user = MOCK_USERS.get(credentials.username)
