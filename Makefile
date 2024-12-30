@@ -62,7 +62,8 @@ venv: ## create virtual environment
 test-venv: ## create test virtual environment
 	test -d $(TEST_VENV) || $(PYTHON) -m venv $(TEST_VENV)
 	$(TEST_VENV_BIN)/pip install --upgrade pip
-	$(TEST_VENV_BIN)/pip install -e ".[test]"
+	$(TEST_VENV_BIN)/pip install -e ".[test,dev]"
+	$(TEST_VENV_BIN)/pre-commit install
 
 test: test-venv ## run tests with coverage reporting
 	$(TEST_VENV_BIN)/pytest -v tests/ --cov=dell_unisphere_mock_api --cov-report=term-missing --cov-report=xml:coverage.xml
