@@ -23,8 +23,9 @@ def sample_pool_data():
     }
 
 
-def test_create_pool(test_client, sample_pool_data, auth_headers):
-    response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+def test_create_pool(test_client, auth_headers, sample_pool_data):
+    headers, _ = auth_headers  # Unpack the tuple
+    response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert response.status_code == 201
     data = response.json()
     assert data["name"] == sample_pool_data["name"]
@@ -32,39 +33,42 @@ def test_create_pool(test_client, sample_pool_data, auth_headers):
     assert "id" in data
 
 
-def test_get_pool(test_client, sample_pool_data, auth_headers):
+def test_get_pool(test_client, auth_headers, sample_pool_data):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert create_response.status_code == 201
     pool_id = create_response.json()["id"]
 
     # Then get it by ID
-    response = test_client.get(f"/api/instances/pool/{pool_id}", headers=auth_headers)
+    response = test_client.get(f"/api/instances/pool/{pool_id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == pool_id
     assert data["name"] == sample_pool_data["name"]
 
 
-def test_get_pool_by_name(test_client, sample_pool_data, auth_headers):
+def test_get_pool_by_name(test_client, auth_headers, sample_pool_data):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert create_response.status_code == 201
 
     # Then get it by name
-    response = test_client.get(f"/api/instances/pool/name:{sample_pool_data['name']}", headers=auth_headers)
+    response = test_client.get(f"/api/instances/pool/name:{sample_pool_data['name']}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == sample_pool_data["name"]
 
 
-def test_list_pools(test_client, sample_pool_data, auth_headers):
+def test_list_pools(test_client, auth_headers, sample_pool_data):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert create_response.status_code == 201
 
     # Then list all pools
-    response = test_client.get("/api/types/pool/instances", headers=auth_headers)
+    response = test_client.get("/api/types/pool/instances", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert "@base" in data
@@ -73,15 +77,16 @@ def test_list_pools(test_client, sample_pool_data, auth_headers):
     assert any(pool["content"]["name"] == sample_pool_data["name"] for pool in data["entries"])
 
 
-def test_modify_pool(test_client, sample_pool_data, auth_headers):
+def test_modify_pool(test_client, auth_headers, sample_pool_data):
+    headers, _ = auth_headers  # Unpack the tuple
     # First create a pool
-    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=auth_headers)
+    create_response = test_client.post("/api/types/pool/instances", json=sample_pool_data, headers=headers)
     assert create_response.status_code == 201
     pool_id = create_response.json()["id"]
 
     # Modify the pool
     update_data = {"description": "Modified test pool", "alertThreshold": 75}
-    response = test_client.patch(f"/api/instances/pool/{pool_id}", json=update_data, headers=auth_headers)
+    response = test_client.patch(f"/api/instances/pool/{pool_id}", json=update_data, headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["description"] == update_data["description"]
