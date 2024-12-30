@@ -19,11 +19,10 @@ def test_get_current_user_success():
     request = Request(
         scope={
             "type": "http",
-            "headers": [(b"x-emc-rest-client", b"true")],
+            "headers": [(b"x-emc-rest-client", b"true"), (b"authorization", b"Basic YWRtaW46UGFzc3dvcmQxMjMh")],
             "path": "/api/types/pool/instances",
         }
     )
-    request._headers = {"x-emc-rest-client": "true"}  # Simulate headers
     response = Response()
 
     user = get_current_user(request, response, credentials)
@@ -37,11 +36,10 @@ def test_get_current_user_invalid_credentials():
     request = Request(
         scope={
             "type": "http",
-            "headers": [(b"x-emc-rest-client", b"true")],
+            "headers": [(b"x-emc-rest-client", b"true"), (b"authorization", b"Basic YWRtaW46d3Jvbmc=")],
             "path": "/api/types/pool/instances",
         }
     )
-    request._headers = {"x-emc-rest-client": "true"}  # Simulate headers
     response = Response()
 
     with pytest.raises(HTTPException) as exc_info:
@@ -52,8 +50,13 @@ def test_get_current_user_invalid_credentials():
 
 def test_get_current_user_missing_header():
     credentials = HTTPBasicCredentials(username="admin", password="Password123!")
-    request = Request(scope={"type": "http", "headers": [], "path": "/api/types/pool/instances"})
-    request._headers = {}  # Simulate missing headers
+    request = Request(
+        scope={
+            "type": "http",
+            "headers": [(b"authorization", b"Basic YWRtaW46UGFzc3dvcmQxMjMh")],
+            "path": "/api/types/pool/instances",
+        }
+    )
     response = Response()
 
     with pytest.raises(HTTPException) as exc_info:
@@ -66,12 +69,14 @@ def test_verify_csrf_token_post_request():
     request = Request(
         scope={
             "type": "http",
-            "headers": [(b"emc-csrf-token", b"valid_token")],
+            "headers": [
+                (b"emc-csrf-token", b"valid_token"),
+                (b"authorization", b"Basic YWRtaW46UGFzc3dvcmQxMjMh")
+            ],
             "method": "POST",
             "path": "/api/types/pool/instances",
         }
     )
-    request._headers = {"emc-csrf-token": "valid_token"}  # Simulate headers
     verify_csrf_token(request, "POST")  # Should not raise exception
 
 
@@ -79,12 +84,11 @@ def test_verify_csrf_token_missing_token():
     request = Request(
         scope={
             "type": "http",
-            "headers": [],
+            "headers": [(b"authorization", b"Basic YWRtaW46UGFzc3dvcmQxMjMh")],
             "method": "POST",
             "path": "/api/types/pool/instances",
         }
     )
-    request._headers = {}  # Simulate missing headers
     with pytest.raises(HTTPException) as exc_info:
         verify_csrf_token(request, "POST")
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -95,10 +99,9 @@ def test_verify_csrf_token_get_request():
     request = Request(
         scope={
             "type": "http",
-            "headers": [],
+            "headers": [(b"authorization", b"Basic YWRtaW46UGFzc3dvcmQxMjMh")],
             "method": "GET",
             "path": "/api/types/pool/instances",
         }
     )
-    request._headers = {}  # Simulate headers
     verify_csrf_token(request, "GET")  # Should not raise exception for GET
