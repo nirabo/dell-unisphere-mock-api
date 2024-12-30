@@ -68,7 +68,7 @@ async def process_job(job: Job):
 
     # Simulate task processing
     total_tasks = len(job.tasks)
-    for i, task in enumerate(job.tasks):
+    for i, _task in enumerate(job.tasks):
         await asyncio.sleep(1)  # Simulate task processing time
         job.progressPct = ((i + 1) / total_tasks) * 100
         job.updated_at = datetime.utcnow().isoformat()
