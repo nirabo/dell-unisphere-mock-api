@@ -78,26 +78,6 @@ async def process_job(job: Job):
     job.updated_at = datetime.utcnow().isoformat()
 
 
-async def process_job(job: Job):
-    """Simulate job processing with progress updates"""
-    import asyncio
-    from datetime import datetime
-
-    job.state = JobState.RUNNING
-    job.created_at = datetime.utcnow().isoformat()
-
-    # Simulate task processing
-    total_tasks = len(job.tasks)
-    for i, _task in enumerate(job.tasks):
-        await asyncio.sleep(1)  # Simulate task processing time
-        job.progressPct = ((i + 1) / total_tasks) * 100
-        job.updated_at = datetime.utcnow().isoformat()
-
-    job.state = JobState.COMPLETED
-    job.progressPct = 100.0
-    job.updated_at = datetime.utcnow().isoformat()
-
-
 app = FastAPI(
     title="Mock Unity Unisphere API",
     description="A mock implementation of Dell Unity Unisphere Management REST API.",
