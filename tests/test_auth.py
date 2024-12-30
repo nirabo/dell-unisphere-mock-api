@@ -11,8 +11,8 @@ client = TestClient(app)
 
 
 def test_verify_password():
-    assert verify_password("Password123!", "Password123!") == True
-    assert verify_password("wrong", "Password123!") == False
+    assert verify_password("Password123!", "Password123!") is True
+    assert not verify_password("wrong", "Password123!")
 
 
 @pytest.mark.asyncio
