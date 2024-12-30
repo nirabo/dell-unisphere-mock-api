@@ -67,8 +67,8 @@ test-venv: ## create test virtual environment
 test: test-venv ## run tests with coverage reporting
 	$(TEST_VENV_BIN)/pytest -v tests/ --cov=dell_unisphere_mock_api --cov-report=term-missing --cov-report=xml:coverage.xml
 
-lint: venv ## run all linters
-	$(VENV_BIN)/pre-commit run --all-files
+lint: test-venv ## run all linters
+	$(TEST_VENV_BIN)/pre-commit run --all-files
 
 format: venv ## format code with black and isort
 	$(VENV_BIN)/black .

@@ -41,13 +41,13 @@ class HostModel:
         """Update a host."""
         if host_id not in self.hosts:
             return None
-        
+
         host = self.hosts[host_id]
         update_data = host_update.dict(exclude_unset=True)
-        
+
         for field, value in update_data.items():
             setattr(host, field, value)
-            
+
         return host
 
     def delete_host(self, host_id: str) -> bool:

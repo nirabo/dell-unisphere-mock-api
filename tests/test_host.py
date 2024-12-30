@@ -1,10 +1,7 @@
 import pytest
-from dell_unisphere_mock_api.schemas.host import (
-    HostTypeEnum,
-    HostCreate,
-    HostUpdate,
-    Host
-)
+
+from dell_unisphere_mock_api.schemas.host import Host, HostCreate, HostTypeEnum, HostUpdate
+
 
 def test_host_type_enum_values():
     """Test that HostTypeEnum has the correct values"""
@@ -13,14 +10,11 @@ def test_host_type_enum_values():
     assert HostTypeEnum.VMWARE == "VMware"
     assert HostTypeEnum.OTHER == "Other"
 
+
 def test_host_create_schema():
     """Test HostCreate schema validation"""
     # Valid data
-    valid_data = {
-        "name": "test-host",
-        "type": HostTypeEnum.LINUX,
-        "description": "Test host"
-    }
+    valid_data = {"name": "test-host", "type": HostTypeEnum.LINUX, "description": "Test host"}
     host = HostCreate(**valid_data)
     assert host.name == "test-host"
     assert host.type == HostTypeEnum.LINUX
@@ -30,13 +24,11 @@ def test_host_create_schema():
     with pytest.raises(ValueError):
         HostCreate(name="test-host")
 
+
 def test_host_update_schema():
     """Test HostUpdate schema validation"""
     # Valid data
-    valid_data = {
-        "description": "Updated description",
-        "os_type": "CentOS 8"
-    }
+    valid_data = {"description": "Updated description", "os_type": "CentOS 8"}
     host = HostUpdate(**valid_data)
     assert host.description == "Updated description"
     assert host.os_type == "CentOS 8"
@@ -47,6 +39,7 @@ def test_host_update_schema():
     assert host.description is None
     assert host.os_type is None
 
+
 def test_host_schema():
     """Test Host schema validation"""
     # Valid data
@@ -56,7 +49,7 @@ def test_host_schema():
         "type": HostTypeEnum.LINUX,
         "description": "Test host",
         "initiators": ["iqn.1994-05.com.redhat:2bfbc0884dc4"],
-        "health": "OK"
+        "health": "OK",
     }
     host = Host(**valid_data)
     assert host.id == "host-123"
@@ -69,6 +62,7 @@ def test_host_schema():
     # Test missing required fields
     with pytest.raises(ValueError):
         Host(id="host-123")
+
 
 def test_host_schema_config():
     """Test Host schema configuration"""

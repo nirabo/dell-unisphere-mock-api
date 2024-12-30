@@ -49,6 +49,6 @@ class Host(BaseModel):
                 "initiators": ["iqn.1994-05.com.redhat:2bfbc0884dc4"],
                 "host_group": "group_1",
                 "health": "OK",
-                "storage_access": ["lun_1", "lun_2"]
+                "storage_access": ["lun_1", "lun_2"],
             }
         }

@@ -60,14 +60,19 @@ class FilesystemResponse(FilesystemBase):
     created: datetime = Field(..., description="Creation timestamp")
     modified: datetime = Field(..., description="Last modification timestamp")
     model_config = ConfigDict(from_attributes=True)
-from pydantic import BaseModel, Field
-from typing import Optional
+
+
 from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
 
 class FilesystemProtocol(str, Enum):
     NFS = "NFS"
     CIFS = "CIFS"
     SMB = "SMB"
+
 
 class FilesystemBase(BaseModel):
     name: str = Field(..., description="Name of the filesystem")
@@ -76,12 +81,15 @@ class FilesystemBase(BaseModel):
     protocol: FilesystemProtocol = Field(..., description="Filesystem protocol")
     description: Optional[str] = Field(None, description="Optional description")
 
+
 class FilesystemCreate(FilesystemBase):
     pass
+
 
 class FilesystemUpdate(BaseModel):
     size: Optional[int] = Field(None, description="New size in bytes", gt=0)
     description: Optional[str] = Field(None, description="Optional description")
+
 
 class FilesystemInDB(FilesystemBase):
     id: str = Field(..., description="Filesystem ID")
