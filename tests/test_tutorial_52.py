@@ -122,13 +122,33 @@ class TestTutorial52:
                     "name": "CreatePool",
                     "object": "pool",
                     "action": "create",
-                    "parametersIn": {"name": "aggregated_pool", "type": 1, "sizeTotal": 1000000000},
+                    "parametersIn": {
+                        "name": "aggregated_pool",
+                        "type": 1,
+                        "sizeTotal": 1000000000,
+                        "raidType": "RAID5",
+                        "poolType": "Performance",
+                        "alertThreshold": 80,
+                        "isFASTCacheEnabled": False,
+                        "isFASTVpScheduleEnabled": True,
+                        "isHarvestEnabled": True
+                    },
+                    "description": "Create pool task",
+                    "descriptionArg": "aggregated_pool"
                 },
                 {
                     "name": "CreateLUN",
                     "object": "storageResource",
                     "action": "createLun",
-                    "parametersIn": {"name": "aggregated_lun", "size": 500000000, "pool": {"id": "@CreatePool.id"}},
+                    "parametersIn": {
+                        "name": "aggregated_lun",
+                        "size": 500000000,
+                        "pool": {"id": "@CreatePool.id"},
+                        "isThinEnabled": True,
+                        "isCompressionEnabled": False
+                    },
+                    "description": "Create LUN task",
+                    "descriptionArg": "aggregated_lun"
                 },
             ],
         }

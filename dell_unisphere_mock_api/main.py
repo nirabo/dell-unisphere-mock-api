@@ -1,8 +1,10 @@
 """Main FastAPI application module for Dell Unisphere Mock API."""
 
-from typing import Dict
+from typing import Dict, List
+from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from dell_unisphere_mock_api.schemas.job import Job, JobCreate, JobState
 from fastapi.middleware.cors import CORSMiddleware
 
 from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_token
@@ -18,6 +20,9 @@ from dell_unisphere_mock_api.routers import (
     storage_resource,
     user,
 )
+
+# In-memory store for jobs
+jobs: Dict[str, Job] = {}
 
 app = FastAPI(
     title="Mock Unity Unisphere API",
