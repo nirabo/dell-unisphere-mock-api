@@ -94,14 +94,7 @@ class TestTutorial52:
             "isFASTCacheEnabled": False,  # FAST Cache enabled
             "isFASTVpScheduleEnabled": True,  # FAST VP schedule enabled
             "isHarvestEnabled": True,  # Harvesting enabled
-            "addRaidGroupParameters": [
-                {
-                    "dskGroup": {"id": "dg_1"},
-                    "numDisks": 3,
-                    "raidType": 1,
-                    "stripeWidth": 3
-                }
-            ]
+            "addRaidGroupParameters": [{"dskGroup": {"id": "dg_1"}, "numDisks": 3, "raidType": 1, "stripeWidth": 3}],
         }
         response = self.client.post(
             "/api/types/pool/instances?timeout=0",  # Async request with timeout=0
