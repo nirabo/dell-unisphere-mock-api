@@ -57,6 +57,7 @@ class Job(BaseModel):
 # In-memory store for jobs
 jobs: Dict[str, Job] = {}
 
+
 async def process_job(job: Job):
     """Simulate job processing with progress updates"""
     import asyncio
@@ -197,18 +198,11 @@ async def get_system_info() -> Dict:
 
 @app.post("/api/types/job/instances", response_model=Job, status_code=202)
 async def create_job(
-    job_data: JobCreate, 
-    background_tasks: BackgroundTasks,
-    current_user: Dict = Depends(get_current_user)
+    job_data: JobCreate, background_tasks: BackgroundTasks, current_user: Dict = Depends(get_current_user)
 ):
     """Create a new job for aggregated operations"""
     job_id = str(uuid4())
-    job = Job(
-        id=job_id,
-        state=JobState.PENDING,
-        description=job_data.description,
-        tasks=job_data.tasks
-    )
+    job = Job(id=job_id, state=JobState.PENDING, description=job_data.description, tasks=job_data.tasks)
     jobs[job_id] = job
 
     # Start job processing in background
