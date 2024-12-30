@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+
 from dell_unisphere_mock_api.controllers.job_controller import JobController
-from dell_unisphere_mock_api.schemas.job import Job, JobCreate
 from dell_unisphere_mock_api.core.auth import get_current_user
+from dell_unisphere_mock_api.schemas.job import Job, JobCreate
 
 router = APIRouter(prefix="/api/types/job", tags=["Job"])
 controller = JobController()
@@ -41,6 +42,7 @@ async def delete_job(job_id: str, current_user: dict = Depends(get_current_user)
 async def simulate_job_processing(job_id: str):
     """Simulate job processing with progress updates."""
     import asyncio
+
     from dell_unisphere_mock_api.models.job import JobModel
     from dell_unisphere_mock_api.schemas.job import JobState
 

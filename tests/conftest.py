@@ -10,10 +10,10 @@ from dell_unisphere_mock_api.core.auth import MOCK_USERS, get_current_user
 from dell_unisphere_mock_api.main import app
 from dell_unisphere_mock_api.models.disk import DiskModel
 from dell_unisphere_mock_api.models.disk_group import DiskGroupModel
+from dell_unisphere_mock_api.models.job import JobModel
 from dell_unisphere_mock_api.models.lun import LUNModel
 from dell_unisphere_mock_api.models.pool import PoolModel
 from dell_unisphere_mock_api.models.pool_unit import PoolUnitModel
-from dell_unisphere_mock_api.models.job import JobModel
 
 
 @pytest.fixture(autouse=True)
@@ -34,7 +34,7 @@ def clear_data():
         disk_group_model.disk_groups.clear()
     if hasattr(pool_unit_model, "pool_units"):
         pool_unit_model.pool_units.clear()
-    
+
     # Clear job data
     job_model = JobModel()
     if hasattr(job_model, "jobs"):
