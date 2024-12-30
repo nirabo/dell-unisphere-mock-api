@@ -19,12 +19,13 @@ async def create_job(
     background_tasks.add_task(simulate_job_processing, job.id)
     return job
 
-
 @router.get("/api/instances/job/{job_id}", response_model=Job)
-async def get_job(job_id: str, current_user: dict = Depends(get_current_user)):
+async def get_job(
+    job_id: str,
+    current_user: dict = Depends(get_current_user),
+):
     """Get the status of a job."""
     return await controller.get_job(job_id)
-
 
 @router.get("/api/types/job/instances", response_model=dict)
 async def list_jobs(
@@ -32,11 +33,16 @@ async def list_jobs(
 ):
     """List all jobs."""
     jobs = await controller.list_jobs()
-    return {"@base": "/api/types/job/instances", "entries": [{"content": job.model_dump()} for job in jobs]}
-
+    return {
+        "@base": "/api/types/job/instances",
+        "entries": [{"content": job.model_dump()} for job in jobs]
+    }
 
 @router.delete("/api/instances/job/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_job(job_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_job(
+    job_id: str,
+    current_user: dict = Depends(get_current_user),
+):
     """Delete a job."""
     await controller.delete_job(job_id)
 
