@@ -17,7 +17,11 @@ def test_verify_password():
 def test_get_current_user_success():
     credentials = HTTPBasicCredentials(username="admin", password="Password123!")
     request = Request(
-        scope={"type": "http", "headers": [(b"x-emc-rest-client", b"true")], "path": "/api/types/pool/instances"}
+        scope={
+            "type": "http",
+            "headers": [(b"x-emc-rest-client", b"true")],
+            "path": "/api/types/pool/instances",
+        }
     )
     response = Response()
 
@@ -30,7 +34,11 @@ def test_get_current_user_success():
 def test_get_current_user_invalid_credentials():
     credentials = HTTPBasicCredentials(username="admin", password="wrong")
     request = Request(
-        scope={"type": "http", "headers": [(b"x-emc-rest-client", b"true")], "path": "/api/types/pool/instances"}
+        scope={
+            "type": "http",
+            "headers": [(b"x-emc-rest-client", b"true")],
+            "path": "/api/types/pool/instances",
+        }
     )
     response = Response()
 
@@ -64,7 +72,14 @@ def test_verify_csrf_token_post_request():
 
 
 def test_verify_csrf_token_missing_token():
-    request = Request(scope={"type": "http", "headers": [], "method": "POST", "path": "/api/types/pool/instances"})
+    request = Request(
+        scope={
+            "type": "http",
+            "headers": [],
+            "method": "POST",
+            "path": "/api/types/pool/instances",
+        }
+    )
     with pytest.raises(HTTPException) as exc_info:
         verify_csrf_token(request, "POST")
     assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
@@ -72,5 +87,12 @@ def test_verify_csrf_token_missing_token():
 
 
 def test_verify_csrf_token_get_request():
-    request = Request(scope={"type": "http", "headers": [], "method": "GET", "path": "/api/types/pool/instances"})
+    request = Request(
+        scope={
+            "type": "http",
+            "headers": [],
+            "method": "GET",
+            "path": "/api/types/pool/instances",
+        }
+    )
     verify_csrf_token(request, "GET")  # Should not raise exception for GET
