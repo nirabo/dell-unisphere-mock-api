@@ -85,11 +85,7 @@ class TestTutorial52:
     def test_async_request(self):
         """Test making an asynchronous request"""
         # Create a pool in async mode
-        pool_data = {
-            "name": "async_test_pool",
-            "type": 1,
-            "sizeTotal": 1000000000
-        }
+        pool_data = {"name": "async_test_pool", "type": 1, "sizeTotal": 1000000000}
         response = self.client.post(
             "/api/types/pool/instances?timeout=0",
             json=pool_data,
@@ -126,25 +122,15 @@ class TestTutorial52:
                     "name": "CreatePool",
                     "object": "pool",
                     "action": "create",
-                    "parametersIn": {
-                        "name": "aggregated_pool",
-                        "type": 1,
-                        "sizeTotal": 1000000000
-                    }
+                    "parametersIn": {"name": "aggregated_pool", "type": 1, "sizeTotal": 1000000000},
                 },
                 {
                     "name": "CreateLUN",
                     "object": "storageResource",
                     "action": "createLun",
-                    "parametersIn": {
-                        "name": "aggregated_lun",
-                        "size": 500000000,
-                        "pool": {
-                            "id": "@CreatePool.id"
-                        }
-                    }
-                }
-            ]
+                    "parametersIn": {"name": "aggregated_lun", "size": 500000000, "pool": {"id": "@CreatePool.id"}},
+                },
+            ],
         }
 
         # Submit aggregated job
