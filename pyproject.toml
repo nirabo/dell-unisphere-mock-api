@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dell-unisphere-mock-api"
-version = "0.2.2"
+version = "0.2.3"
 authors = [
   { name="Lyuboslav Petrov", email="petrov.lyuboslav.work@gmail.com" },
 ]
 description = "A FastAPI-based mock implementation of the Dell EMC Unisphere REST API"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",

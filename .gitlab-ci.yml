@@ -30,10 +30,6 @@ stages:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-test_python39:
-  <<: *test_template
-  image: python:3.9
-
 test_python310:
   <<: *test_template
   image: python:3.10
