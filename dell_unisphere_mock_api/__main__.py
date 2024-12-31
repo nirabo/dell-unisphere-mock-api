@@ -1,6 +1,7 @@
 """
 Entry point for running the Dell Unisphere Mock API.
 """
+
 import uvicorn
 
 from dell_unisphere_mock_api.main import app

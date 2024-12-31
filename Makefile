@@ -14,8 +14,8 @@ export PRINT_HELP_PYSCRIPT
 
 VENV = .venv
 TEST_VENV = .venv.test
-PYTHON = python3.12
-PIP = pip3
+PYTHON = python3
+PIP = pip
 TEST_VENV_BIN = $(TEST_VENV)/bin
 VENV_BIN = $(VENV)/bin
 PID_FILE = dell_unisphere_mock_api.pid
