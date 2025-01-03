@@ -1,5 +1,8 @@
 """Main FastAPI application module for Dell Unisphere Mock API."""
 
+import logging
+import logging.config
+
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,9 +18,50 @@ from dell_unisphere_mock_api.routers import (
     pool,
     pool_unit,
     storage_resource,
+    system_info,
     user,
 )
 
+logging_config = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "()": "uvicorn.logging.DefaultFormatter",
+            "fmt": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        },
+        "access": {
+            "()": "uvicorn.logging.AccessFormatter",
+            "fmt": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        },
+    },
+    "handlers": {
+        "default": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr",
+            "formatter": "default",
+        },
+        "access": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": "access",
+        },
+    },
+    "loggers": {
+        "uvicorn.error": {
+            "level": "INFO",
+            "handlers": ["default"],
+            "propagate": False,
+        },
+        "uvicorn.access": {
+            "level": "INFO",
+            "handlers": ["access"],
+            "propagate": False,
+        },
+    },
+}
+
+logging.config.dictConfig(logging_config)
 # Store the original openapi function
 original_openapi = FastAPI.openapi
 
@@ -145,36 +189,7 @@ app.include_router(
 )
 app.include_router(disk.router, prefix="/api", tags=["Disk"], dependencies=[Depends(get_current_user)])
 app.include_router(user.router, prefix="/api", tags=["User"], dependencies=[Depends(get_current_user)])
-
-
-@app.get("/api/instances/system/0", response_model=dict)
-async def get_system_details(current_user: dict = Depends(get_current_user)) -> dict:
-    """Get system details."""
-    return {
-        "content": {
-            "id": "APM00123456789",
-            "model": "Unity 380",
-            "name": "Unity-380",
-            "softwareVersion": "5.0.0.0.0.001",
-            "apiVersion": "10.0",
-            "earliestApiVersion": "5.0",
-            "platform": "Platform2",
-            "mac": "00:60:16:5C:B7:E0",
-        }
-    }
-
-
-@app.get("/api/types/system/0/basicSystemInfo", response_model=dict)
-async def get_system_info() -> dict:
-    """Basic system information. This endpoint is accessible without authentication."""
-    return {
-        "content": {
-            "name": "Unity-380",
-            "model": "Unity 380",
-            "serialNumber": "APM00123456789",
-            "softwareVersion": "5.0.0.0.0.001",
-        }
-    }
+app.include_router(system_info.router, prefix="/api", tags=["System Information"])
 
 
 if __name__ == "__main__":

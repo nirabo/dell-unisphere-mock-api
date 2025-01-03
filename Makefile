@@ -90,4 +90,4 @@ release: dist ## package and upload a release
 	$(PYTHON) -m twine upload dist/*
 
 run: venv ## run development server
-	$(VENV_BIN)/python -m dell_unisphere_mock_api --reload
+	$(VENV_BIN)/uvicorn dell_unisphere_mock_api.main:app --reload

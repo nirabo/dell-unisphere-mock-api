@@ -1,8 +1,11 @@
+import logging
 from typing import List
 
 from fastapi import HTTPException
 
 from ..core.system_info import BasicSystemInfo
+
+logger = logging.getLogger(__name__)
 
 
 class SystemInfoController:
@@ -26,13 +29,16 @@ class SystemInfoController:
 
     def get_by_id(self, instance_id: str) -> BasicSystemInfo:
         """Get a specific basic system info instance by ID"""
+        logger.info(f"Received request for id: {id}")
         if instance_id != self.mock_system_info.id:
-            raise HTTPException(status_code=404, detail="System info not found")
+            raise HTTPException(status_code=404, detail="System info not foundtest")
         return self.mock_system_info
 
     def get_by_name(self, name: str) -> BasicSystemInfo:
         """Get a specific basic system info instance by name"""
-        # Direct comparison since router handles the "name:" prefix
+        # Direct comparison of the name
+        logger.info(f"Received request for name: {name}")
+        print((f"Received request for name: {name}"), flush=True)
         if name != self.mock_system_info.name:
-            raise HTTPException(status_code=404, detail="System info not found")
+            raise HTTPException(status_code=404, detail=f"System info not found for {name}")
         return self.mock_system_info
