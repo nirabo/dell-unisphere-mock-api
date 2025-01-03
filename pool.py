@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -175,8 +176,8 @@ class Pool(BaseModel):
                         "sizeFree": 500000000,
                         "name": "FlashTier",
                         "diskCount": 10,
-                        "spareDriveCount": 2
+                        "spareDriveCount": 2,
                     }
-                ]
+                ],
             }
         }
