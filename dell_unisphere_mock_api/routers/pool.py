@@ -86,10 +86,22 @@ async def list_pools(
             content = {}
             for field in field_list:
                 if hasattr(pool, field):
-                    content[field] = getattr(pool, field)
+                    value = getattr(pool, field)
+                    if isinstance(value, datetime):
+                        content[field] = value.isoformat()
+                    else:
+                        content[field] = value
             entries.append({"content": content})
     else:
-        entries = [{"content": pool.model_dump()} for pool in pools]
+        # Use model_dump with custom datetime encoder
+        entries = []
+        for pool in pools:
+            pool_dict = pool.model_dump()
+            # Convert datetime objects to ISO format strings
+            for key, value in pool_dict.items():
+                if isinstance(value, datetime):
+                    pool_dict[key] = value.isoformat()
+            entries.append({"content": pool_dict})
 
     response_data = {
         "@base": f"{settings.API_BASE_URL}/types/pool/instances",

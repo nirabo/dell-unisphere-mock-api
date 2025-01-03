@@ -30,26 +30,38 @@ class PoolController:
 
         # Validate harvest settings
         if pool_create.isHarvestEnabled:
-            if not pool_create.poolSpaceHarvestHighThreshold:
+            if pool_create.poolSpaceHarvestHighThreshold is None:
                 raise HTTPException(
                     status_code=422, detail="Pool space harvest high threshold must be set when harvesting is enabled"
                 )
-            if not pool_create.poolSpaceHarvestLowThreshold:
+            if pool_create.poolSpaceHarvestLowThreshold is None:
                 raise HTTPException(
                     status_code=422, detail="Pool space harvest low threshold must be set when harvesting is enabled"
                 )
+            if (
+                pool_create.poolSpaceHarvestLowThreshold is not None
+                and pool_create.poolSpaceHarvestHighThreshold is not None
+                and pool_create.poolSpaceHarvestLowThreshold >= pool_create.poolSpaceHarvestHighThreshold
+            ):
+                raise HTTPException(status_code=422, detail="Low threshold must be less than high threshold")
 
         if pool_create.isSnapHarvestEnabled:
-            if not pool_create.snapSpaceHarvestHighThreshold:
+            if pool_create.snapSpaceHarvestHighThreshold is None:
                 raise HTTPException(
                     status_code=422,
                     detail="Snap space harvest high threshold must be set when snap harvesting is enabled",
                 )
-            if not pool_create.snapSpaceHarvestLowThreshold:
+            if pool_create.snapSpaceHarvestLowThreshold is None:
                 raise HTTPException(
                     status_code=422,
                     detail="Snap space harvest low threshold must be set when snap harvesting is enabled",
                 )
+            if (
+                pool_create.snapSpaceHarvestLowThreshold is not None
+                and pool_create.snapSpaceHarvestHighThreshold is not None
+                and pool_create.snapSpaceHarvestLowThreshold >= pool_create.snapSpaceHarvestHighThreshold
+            ):
+                raise HTTPException(status_code=422, detail="Low threshold must be less than high threshold")
 
         # Create the pool
         pool_dict = pool_create.model_dump()
@@ -64,6 +76,24 @@ class PoolController:
                 "sizePreallocated": 0,
                 "sizeSubscribed": pool_create.sizeTotal,
                 "harvestState": HarvestStateEnum.IDLE,
+                "isEmpty": True,
+                "hasDataReductionEnabledLuns": False,
+                "hasDataReductionEnabledFs": False,
+                "dataReductionSizeSaved": 0,
+                "dataReductionPercent": 0,
+                "dataReductionRatio": 1.0,
+                "flashPercentage": 100,
+                "metadataSizeSubscribed": 0,
+                "snapSizeSubscribed": 0,
+                "nonBaseSizeSubscribed": 0,
+                "metadataSizeUsed": 0,
+                "snapSizeUsed": 0,
+                "nonBaseSizeUsed": 0,
+                "isAllFlash": True,
+                "tiers": [],
+                "poolFastVP": None,
+                "type": "dynamic",
+                "rebalanceProgress": None,
             }
         )
         print(f"Pool controller: Pool data before creation: {pool_dict}")
@@ -94,46 +124,81 @@ class PoolController:
         print(f"Pool controller: Listed pools: {pools}")
         return pools
 
-    def update_pool(self, pool_id: str, update_data: PoolUpdate) -> Optional[Pool]:
+    def update_pool(self, pool_id: str, pool_update: PoolUpdate) -> Optional[Pool]:
         """Update a pool."""
         print(f"Pool controller: Updating pool with ID: {pool_id}")
-        # Get existing pool
-        current_pool = self.pool_model.get_pool(pool_id)
-        if not current_pool:
-            print(f"Pool controller: Pool with ID {pool_id} not found")
-            return None
+        print(f"Pool controller: Update data: {pool_update.model_dump()}")
 
-        # If name is being changed, check for conflicts
-        if update_data.name and update_data.name != current_pool.name:
-            existing_pool = self.pool_model.get_pool_by_name(update_data.name)
-            if existing_pool:
-                raise HTTPException(status_code=422, detail="Pool with this name already exists")
+        # Get existing pool
+        pool = self.pool_model.get_pool(pool_id)
+        if not pool:
+            print(f"Pool controller: Pool not found with ID: {pool_id}")
+            raise HTTPException(status_code=404, detail=f"Pool with ID '{pool_id}' not found")
 
         # Validate harvest settings
-        if update_data.isHarvestEnabled is True:
-            if not update_data.poolSpaceHarvestHighThreshold and not current_pool.poolSpaceHarvestHighThreshold:
+        if pool_update.isHarvestEnabled is True:  # Only validate if explicitly set to True
+            if pool_update.poolSpaceHarvestHighThreshold is None and pool.poolSpaceHarvestHighThreshold is None:
+                print("Pool controller: Pool space harvest high threshold must be set when enabling harvesting")
                 raise HTTPException(
                     status_code=422, detail="Pool space harvest high threshold must be set when harvesting is enabled"
                 )
-            if not update_data.poolSpaceHarvestLowThreshold and not current_pool.poolSpaceHarvestLowThreshold:
+            if pool_update.poolSpaceHarvestLowThreshold is None and pool.poolSpaceHarvestLowThreshold is None:
+                print("Pool controller: Pool space harvest low threshold must be set when enabling harvesting")
                 raise HTTPException(
                     status_code=422, detail="Pool space harvest low threshold must be set when harvesting is enabled"
                 )
 
-        if update_data.isSnapHarvestEnabled is True:
-            if not update_data.snapSpaceHarvestHighThreshold and not current_pool.snapSpaceHarvestHighThreshold:
+            # Check thresholds if either is being updated
+            high_threshold = (
+                pool_update.poolSpaceHarvestHighThreshold
+                if pool_update.poolSpaceHarvestHighThreshold is not None
+                else pool.poolSpaceHarvestHighThreshold
+            )
+            low_threshold = (
+                pool_update.poolSpaceHarvestLowThreshold
+                if pool_update.poolSpaceHarvestLowThreshold is not None
+                else pool.poolSpaceHarvestLowThreshold
+            )
+
+            if high_threshold is not None and low_threshold is not None and low_threshold >= high_threshold:
+                print("Pool controller: Low threshold must be less than high threshold")
+                raise HTTPException(status_code=422, detail="Low threshold must be less than high threshold")
+
+        if pool_update.isSnapHarvestEnabled is True:  # Only validate if explicitly set to True
+            if pool_update.snapSpaceHarvestHighThreshold is None and pool.snapSpaceHarvestHighThreshold is None:
+                print("Pool controller: Snap space harvest high threshold must be set when enabling snap harvesting")
                 raise HTTPException(
                     status_code=422,
                     detail="Snap space harvest high threshold must be set when snap harvesting is enabled",
                 )
-            if not update_data.snapSpaceHarvestLowThreshold and not current_pool.snapSpaceHarvestLowThreshold:
+            if pool_update.snapSpaceHarvestLowThreshold is None and pool.snapSpaceHarvestLowThreshold is None:
+                print("Pool controller: Snap space harvest low threshold must be set when enabling snap harvesting")
                 raise HTTPException(
                     status_code=422,
                     detail="Snap space harvest low threshold must be set when snap harvesting is enabled",
                 )
 
-        print(f"Pool controller: Updated pool: {update_data}")
-        return self.pool_model.update_pool(pool_id, update_data)
+            # Check thresholds if either is being updated
+            high_threshold = (
+                pool_update.snapSpaceHarvestHighThreshold
+                if pool_update.snapSpaceHarvestHighThreshold is not None
+                else pool.snapSpaceHarvestHighThreshold
+            )
+            low_threshold = (
+                pool_update.snapSpaceHarvestLowThreshold
+                if pool_update.snapSpaceHarvestLowThreshold is not None
+                else pool.snapSpaceHarvestLowThreshold
+            )
+
+            if high_threshold is not None and low_threshold is not None and low_threshold >= high_threshold:
+                print("Pool controller: Low threshold must be less than high threshold")
+                raise HTTPException(status_code=422, detail="Low threshold must be less than high threshold")
+
+        # Update the pool
+        print(f"Pool controller: Updating pool with data: {pool_update.model_dump()}")
+        result = self.pool_model.update_pool(pool_id, pool_update)
+        print(f"Pool controller: Update result: {result}")
+        return result
 
     def delete_pool(self, pool_id: str) -> bool:
         """Delete a pool."""

@@ -72,27 +72,26 @@ class PoolModel:
         """
         return list(self.pools.values())
 
-    def update_pool(self, pool_id: str, update_data: PoolUpdate) -> Optional[Pool]:
-        """
-        Update a pool instance.
-
-        Args:
-            pool_id: The ID of the pool to update.
-            update_data: Data to update the pool with.
-
-        Returns:
-            The updated pool instance if found, otherwise None.
-        """
+    def update_pool(self, pool_id: str, pool_update: PoolUpdate) -> Optional[Pool]:
+        """Update a pool by its ID."""
         logger.debug(f"Updating pool with ID: {pool_id}")
         pool = self.pools.get(pool_id)
         if pool:
             # Update the pool with the provided data
-            update_dict = update_data.dict(exclude_unset=True)
-            for key, value in update_dict.items():
-                setattr(pool, key, value)
-            self.pools[pool_id] = pool
-            logger.debug(f"Updated pool: {pool}")
-        return pool
+            update_dict = {k: v for k, v in pool_update.model_dump().items() if v is not None}
+            logger.debug(f"Applying updates: {update_dict}")
+
+            # Create a new pool instance with updated data
+            updated_data = pool.model_dump()
+            updated_data.update(update_dict)
+            updated_pool = Pool(**updated_data)
+
+            # Store the updated pool
+            self.pools[pool_id] = updated_pool
+            logger.debug(f"Updated pool: {updated_pool}")
+            return updated_pool
+        logger.debug(f"Pool with ID {pool_id} not found")
+        return None
 
     def delete_pool(self, pool_id: str) -> bool:
         """

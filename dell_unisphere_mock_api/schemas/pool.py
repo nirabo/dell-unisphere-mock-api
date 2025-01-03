@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_validator, validator
 
 
 class RaidTypeEnum(str, Enum):
@@ -123,13 +123,25 @@ class PoolCreate(BaseModel):
     isFASTVpScheduleEnabled: bool = False
     type: str = "dynamic"
 
+    @validator("poolSpaceHarvestHighThreshold", "poolSpaceHarvestLowThreshold")
     @classmethod
-    def model_validator(cls, values):
+    def validate_pool_harvest_thresholds(cls, v, values):
         if values.get("isHarvestEnabled"):
-            if values.get("poolSpaceHarvestHighThreshold") is None:
+            if v is None:
                 raise ValueError("Pool space harvest high threshold must be set when harvesting is enabled")
-            if values.get("poolSpaceHarvestLowThreshold") is None:
-                raise ValueError("Pool space harvest low threshold must be set when harvesting is enabled")
+        return v
+
+    @validator("snapSpaceHarvestHighThreshold", "snapSpaceHarvestLowThreshold")
+    @classmethod
+    def validate_snap_harvest_thresholds(cls, v, values):
+        if values.get("isSnapHarvestEnabled"):
+            if v is None:
+                raise ValueError("Snap space harvest high threshold must be set when snap harvesting is enabled")
+        return v
+
+    @validator("poolSpaceHarvestLowThreshold", "poolSpaceHarvestHighThreshold", always=True)
+    def validate_threshold_relationships(cls, v, values):
+        if values.get("isHarvestEnabled"):
             if (
                 values.get("poolSpaceHarvestLowThreshold") is not None
                 and values.get("poolSpaceHarvestHighThreshold") is not None
@@ -138,17 +150,13 @@ class PoolCreate(BaseModel):
                 raise ValueError("Low threshold must be less than high threshold")
 
         if values.get("isSnapHarvestEnabled"):
-            if values.get("snapSpaceHarvestHighThreshold") is None:
-                raise ValueError("Snap space harvest high threshold must be set when snap harvesting is enabled")
-            if values.get("snapSpaceHarvestLowThreshold") is None:
-                raise ValueError("Snap space harvest low threshold must be set when snap harvesting is enabled")
             if (
                 values.get("snapSpaceHarvestLowThreshold") is not None
                 and values.get("snapSpaceHarvestHighThreshold") is not None
                 and values.get("snapSpaceHarvestLowThreshold") >= values.get("snapSpaceHarvestHighThreshold")
             ):
                 raise ValueError("Low threshold must be less than high threshold")
-        return values
+        return v
 
 
 class PoolUpdate(BaseModel):
@@ -164,13 +172,25 @@ class PoolUpdate(BaseModel):
     isFASTCacheEnabled: Optional[bool] = None
     isFASTVpScheduleEnabled: Optional[bool] = None
 
+    @validator("poolSpaceHarvestHighThreshold", "poolSpaceHarvestLowThreshold")
     @classmethod
-    def model_validator(cls, values):
-        if values.get("isHarvestEnabled"):
-            if values.get("poolSpaceHarvestHighThreshold") is None:
+    def validate_pool_harvest_thresholds(cls, v, values):
+        if values.get("isHarvestEnabled") is True:  # Only validate if explicitly set to True
+            if v is None:
                 raise ValueError("Pool space harvest high threshold must be set when harvesting is enabled")
-            if values.get("poolSpaceHarvestLowThreshold") is None:
-                raise ValueError("Pool space harvest low threshold must be set when harvesting is enabled")
+        return v
+
+    @validator("snapSpaceHarvestHighThreshold", "snapSpaceHarvestLowThreshold")
+    @classmethod
+    def validate_snap_harvest_thresholds(cls, v, values):
+        if values.get("isSnapHarvestEnabled") is True:  # Only validate if explicitly set to True
+            if v is None:
+                raise ValueError("Snap space harvest high threshold must be set when snap harvesting is enabled")
+        return v
+
+    @validator("poolSpaceHarvestLowThreshold", "poolSpaceHarvestHighThreshold", always=True)
+    def validate_threshold_relationships(cls, v, values):
+        if values.get("isHarvestEnabled") is True:  # Only validate if explicitly set to True
             if (
                 values.get("poolSpaceHarvestLowThreshold") is not None
                 and values.get("poolSpaceHarvestHighThreshold") is not None
@@ -178,60 +198,61 @@ class PoolUpdate(BaseModel):
             ):
                 raise ValueError("Low threshold must be less than high threshold")
 
-        if values.get("isSnapHarvestEnabled"):
-            if values.get("snapSpaceHarvestHighThreshold") is None:
-                raise ValueError("Snap space harvest high threshold must be set when snap harvesting is enabled")
-            if values.get("snapSpaceHarvestLowThreshold") is None:
-                raise ValueError("Snap space harvest low threshold must be set when snap harvesting is enabled")
+        if values.get("isSnapHarvestEnabled") is True:  # Only validate if explicitly set to True
             if (
                 values.get("snapSpaceHarvestLowThreshold") is not None
                 and values.get("snapSpaceHarvestHighThreshold") is not None
                 and values.get("snapSpaceHarvestLowThreshold") >= values.get("snapSpaceHarvestHighThreshold")
             ):
                 raise ValueError("Low threshold must be less than high threshold")
-        return values
+        return v
 
 
 class Pool(BaseModel):
+    """Pool model."""
+
     id: str
     name: str
-    description: Optional[str] = None
+    description: Optional[str]
     raidType: RaidTypeEnum
     sizeTotal: int
-    sizeFree: int = 0
-    sizeUsed: int = 0
-    sizePreallocated: int = 0
-    dataReductionSizeSaved: int = 0
-    dataReductionPercent: int = 0
-    dataReductionRatio: float = 1.0
-    flashPercentage: int = 100
-    sizeSubscribed: int = Field(0, description="Size of space requested by storage resources")
+    sizeFree: int
+    sizeUsed: int
+    sizePreallocated: int
+    dataReductionSizeSaved: int
+    dataReductionPercent: int
+    dataReductionRatio: float
+    flashPercentage: int
+    sizeSubscribed: int
     alertThreshold: int = Field(50, ge=50, le=84)
-    hasDataReductionEnabledLuns: bool = False
-    hasDataReductionEnabledFs: bool = False
-    isFASTCacheEnabled: bool = False
+    hasDataReductionEnabledLuns: bool
+    hasDataReductionEnabledFs: bool
+    isFASTCacheEnabled: bool
     creationTime: datetime
-    isEmpty: bool = True
-    poolFastVP: Optional[PoolFASTVP] = None
-    tiers: List[PoolTier] = Field(default_factory=list)
-    isHarvestEnabled: bool = False
-    harvestState: Optional[HarvestStateEnum] = HarvestStateEnum.IDLE
-    isSnapHarvestEnabled: bool = False
-    poolSpaceHarvestHighThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
-    poolSpaceHarvestLowThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
-    snapSpaceHarvestHighThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
-    snapSpaceHarvestLowThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
-    metadataSizeSubscribed: int = 0
-    snapSizeSubscribed: int = 0
-    nonBaseSizeSubscribed: int = 0
-    metadataSizeUsed: int = 0
-    snapSizeUsed: int = 0
-    nonBaseSizeUsed: int = 0
+    isEmpty: bool
+    poolFastVP: Optional[PoolFASTVP]
+    tiers: List[PoolTier]
+    isHarvestEnabled: bool
+    harvestState: HarvestStateEnum
+    isSnapHarvestEnabled: bool
+    poolSpaceHarvestHighThreshold: Optional[float]
+    poolSpaceHarvestLowThreshold: Optional[float]
+    snapSpaceHarvestHighThreshold: Optional[float]
+    snapSpaceHarvestLowThreshold: Optional[float]
+    metadataSizeSubscribed: int
+    snapSizeSubscribed: int
+    nonBaseSizeSubscribed: int
+    metadataSizeUsed: int
+    snapSizeUsed: int
+    nonBaseSizeUsed: int
     rebalanceProgress: Optional[int] = None
-    type: str = "dynamic"
-    isAllFlash: bool = True
+    type: str
+    isAllFlash: bool
 
     class Config:
+        """Pydantic model configuration."""
+
+        json_encoders = {datetime: lambda v: v.isoformat()}
         json_schema_extra = {
             "example": {
                 "id": "pool_123",
