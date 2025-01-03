@@ -33,6 +33,9 @@ class SystemInfoController:
         if name.startswith("name:"):
             name = name[5:]
         
+        # Remove any URL encoding
+        name = name.replace("%20", " ")
+        
         if name != self.mock_system_info.name:
             raise HTTPException(status_code=404, detail="System info not found")
         return self.mock_system_info
