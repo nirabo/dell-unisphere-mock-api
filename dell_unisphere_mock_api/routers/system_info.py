@@ -14,4 +14,6 @@ async def get_basic_system_info_by_id(id: str):
 
 @router.get("/instances/basicSystemInfo/name:{name}")
 async def get_basic_system_info_by_name(name: str):
+    # Remove URL encoding from the name parameter
+    name = name.replace("%20", " ")
     return controller.get_by_name(name)

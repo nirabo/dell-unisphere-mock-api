@@ -32,13 +32,7 @@ class SystemInfoController:
 
     def get_by_name(self, name: str) -> BasicSystemInfo:
         """Get a specific basic system info instance by name"""
-        # Remove the "name:" prefix if present
-        if name.startswith("name:"):
-            name = name[5:]
-
-        # Remove any URL encoding
-        name = name.replace("%20", " ")
-
+        # Direct comparison since router handles the "name:" prefix
         if name != self.mock_system_info.name:
             raise HTTPException(status_code=404, detail="System info not found")
         return self.mock_system_info
