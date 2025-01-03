@@ -1,6 +1,7 @@
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional
-from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -193,6 +194,6 @@ class Pool(BaseModel):
                 "snapSizeUsed": 0,
                 "nonBaseSizeUsed": 0,
                 "type": "dynamic",
-                "isAllFlash": True
+                "isAllFlash": True,
             }
         }

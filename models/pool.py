@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import Dict, List, Optional
 from uuid import uuid4
-from datetime import datetime
+
 from ..schemas.pool import Pool, PoolCreate, PoolUpdate
 
 
@@ -49,7 +50,7 @@ class PoolModel:
             "nonBaseSizeUsed": 0,
             "rebalanceProgress": None,
             "isAllFlash": True if pool_data.type == "dynamic" else False,
-            "poolFastVP": None
+            "poolFastVP": None,
         }
 
         # Create the pool instance
