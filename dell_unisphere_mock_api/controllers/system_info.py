@@ -14,7 +14,7 @@ class SystemInfoController:
     def __init__(self):
         # Mock data - would typically come from a database or service
         self.mock_system_info = BasicSystemInfo(
-            id="system-1",
+            id="0",
             model="Unity 450F",
             name="MyStorageSystem",
             softwareVersion="5.2.0",

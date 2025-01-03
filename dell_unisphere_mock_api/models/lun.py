@@ -1,3 +1,4 @@
+import logging
 import random
 from typing import Dict, List, Optional
 from uuid import uuid4
@@ -39,7 +40,10 @@ class LUNModel:
 
     def create_lun(self, lun_create: LUNCreate) -> LUN:
         """Create a new LUN."""
+        logging.debug(f"LUN model: Creating LUN with name: {lun_create.name}")
         lun_dict = lun_create.model_dump()
+        logging.debug(f"LUN model: Initial LUN data: {lun_dict}")
+
         lun_dict["pool_id"] = str(lun_dict["pool_id"])  # Ensure pool_id is string
         lun_dict["wwn"] = self._generate_wwn()
         lun_dict["health"] = self._create_default_health()
@@ -47,9 +51,11 @@ class LUNModel:
         lun_dict["sizeAllocated"] = 0  # Initially no space allocated for thin provisioning
         lun_dict["id"] = str(uuid4())  # Explicitly set ID
 
+        logging.debug(f"LUN model: Final LUN data: {lun_dict}")
         # Create LUN instance
         new_lun = LUN(**lun_dict)
         self.luns[new_lun.id] = new_lun
+        logging.debug(f"LUN model: Stored LUN. Available LUNs: {list(self.luns.keys())}")
         return new_lun
 
     def get_lun(self, lun_id: str) -> Optional[LUN]:

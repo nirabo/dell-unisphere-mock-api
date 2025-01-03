@@ -41,7 +41,7 @@ def test_basic_system_info_unauthenticated_access():
     """Verify basicSystemInfo endpoints are accessible without authentication"""
     endpoints = [
         "/api/types/basicSystemInfo/instances",
-        "/api/instances/basicSystemInfo/system-1",
+        "/api/instances/basicSystemInfo/0",
         "/api/instances/basicSystemInfo/name/MyStorageSystem",
     ]
 

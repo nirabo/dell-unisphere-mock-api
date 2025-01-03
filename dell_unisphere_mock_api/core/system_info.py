@@ -17,7 +17,7 @@ class BasicSystemInfo(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "id": "system-1",
+                "id": "0",
                 "model": "Unity 450F",
                 "name": "MyStorageSystem",
                 "softwareVersion": "5.2.0",

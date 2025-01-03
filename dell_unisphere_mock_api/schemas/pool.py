@@ -1,130 +1,294 @@
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional
-from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field, validator
 
 
 class RaidTypeEnum(str, Enum):
-    RAID5 = "RAID5"
     RAID0 = "RAID0"
     RAID1 = "RAID1"
-    RAID3 = "RAID3"
-    RAID10 = "RAID10"
+    RAID5 = "RAID5"
     RAID6 = "RAID6"
-    Mixed = "Mixed"
-    None_ = "None"
-
-
-class RaidStripeWidthEnum(str, Enum):
-    BestFit = "BestFit"
-    RAID10 = "2"
-    RAID5_3 = "3"
-    RAID5_4 = "4"
-    RAID5_5 = "5"
-    RAID5_6 = "6"
-    RAID5_7 = "7"
-    RAID5_8 = "8"
-    RAID5_9 = "9"
-    RAID5_10 = "10"
-    RAID5_11 = "11"
-    RAID5_12 = "12"
-    RAID5_13 = "13"
-    RAID5_14 = "14"
+    RAID10 = "RAID10"
+    MIXED = "MIXED"
 
 
 class TierTypeEnum(str, Enum):
-    None_ = "None"
-    Extreme_Performance = "Extreme_Performance"
-    Performance = "Performance"
-    Capacity = "Capacity"
+    EXTREME_PERFORMANCE = "EXTREME_PERFORMANCE"
+    PERFORMANCE = "PERFORMANCE"
+    CAPACITY = "CAPACITY"
 
 
-class FastCacheStateEnum(str, Enum):
-    Enabled = "Enabled"
-    Disabled = "Disabled"
-    Mixed = "Mixed"
+class FastVPStatusEnum(str, Enum):
+    IDLE = "IDLE"
+    RUNNING = "RUNNING"
+    PAUSED = "PAUSED"
+    COMPLETED = "COMPLETED"
 
 
-class SpaceEfficiencyEnum(str, Enum):
-    Thin = "Thin"
-    Thick = "Thick"
-    Mixed = "Mixed"
+class FastVPRelocationRateEnum(str, Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
 
 
-class TieringPolicyEnum(str, Enum):
-    Autotier_High = "Autotier_High"
-    Autotier = "Autotier"
-    Highest = "Highest"
-    Lowest = "Lowest"
-    No_Data_Movement = "No_Data_Movement"
-    Mixed = "Mixed"
+class HarvestStateEnum(str, Enum):
+    IDLE = "IDLE"
+    HARVESTING = "HARVESTING"
+    PAUSED = "PAUSED"
+    ERROR = "ERROR"
 
 
-class PoolHealth(BaseModel):
-    value: int = Field(..., description="Health status value")
-    descriptionIds: List[str] = Field(default_factory=list, description="List of health status description IDs")
-    descriptions: List[str] = Field(default_factory=list, description="List of health status descriptions")
+class PoolRaidStripeWidthInfo(BaseModel):
+    rpm: int = Field(..., description="Revolutions Per Minute (RPMs)")
+    stripeWidth: int = Field(..., description="RAID stripe width")
+    driveTechnology: str = Field(..., description="Drive technology")
+    driveCount: int = Field(..., description="Number of physical drives")
+    parityDrives: int = Field(..., description="Number of parity drives")
 
 
-class Pool(BaseModel):
-    """Pool model that includes all pool attributes."""
+class PoolTier(BaseModel):
+    tierType: TierTypeEnum
+    stripeWidth: int
+    raidType: RaidTypeEnum
+    sizeTotal: int
+    sizeUsed: int
+    sizeFree: int
+    sizeMovingDown: int
+    sizeMovingUp: int
+    sizeMovingWithin: int
+    name: str
+    poolUnits: List[str]
+    diskCount: int
+    spareDriveCount: int
+    raidStripeWidthInfo: List[PoolRaidStripeWidthInfo]
 
-    id: str = Field(
-        default_factory=lambda: str(uuid4()),
-        description="Unique identifier for the pool",
-    )
-    name: str = Field(..., description="Name of the pool", min_length=1, max_length=63)
-    description: Optional[str] = Field(None, description="Description of the pool", max_length=170)
-    health: Optional[PoolHealth] = None
-    raidType: RaidTypeEnum = Field(..., description="RAID type of the pool")
-    raidStripeWidth: Optional[RaidStripeWidthEnum] = Field(None, description="RAID stripe width")
-    sizeFree: int = Field(..., description="Size of available space in the pool, in bytes", ge=0)
-    sizeTotal: int = Field(..., description="Total size of the pool, in bytes", ge=0)
-    sizeUsed: int = Field(..., description="Size of used space in the pool, in bytes", ge=0)
-    sizeSubscribed: int = Field(
-        ...,
-        description="Total size of space in the pool that is subscribed by all storage resources",
-        ge=0,
-    )
-    alertThreshold: int = Field(
-        80,
-        description="Threshold at which the system will generate alerts about the free space in the pool",
-        ge=50,
-        le=84,
-    )
-    poolFastVP: bool = Field(True, description="Indicates whether thin provisioning is enabled for the pool")
-    poolType: TierTypeEnum = Field(..., description="Type of storage tier in the pool")
-    isFASTCacheEnabled: bool = Field(False, description="Indicates whether FAST Cache is enabled for the pool")
-    isFASTVpScheduleEnabled: bool = Field(True, description="Indicates whether scheduled data relocations are enabled")
-    isHarvestEnabled: bool = Field(True, description="Indicates whether pool space harvesting is enabled")
-    model_config = ConfigDict(from_attributes=True)
+
+class PoolFASTVP(BaseModel):
+    status: FastVPStatusEnum
+    relocationRate: FastVPRelocationRateEnum
+    isScheduleEnabled: bool
+    relocationDurationEstimate: Optional[datetime]
+    sizeMovingDown: int
+    sizeMovingUp: int
+    sizeMovingWithin: int
+    percentComplete: int
+    type: str
+    dataRelocated: int
+    lastStartTime: Optional[datetime]
+    lastEndTime: Optional[datetime]
+
+
+class PoolConfiguration(BaseModel):
+    name: str
+    description: Optional[str]
+    storageConfiguration: dict
+    alertThreshold: int
+    poolSpaceHarvestHighThreshold: float
+    poolSpaceHarvestLowThreshold: float
+    snapSpaceHarvestHighThreshold: float
+    snapSpaceHarvestLowThreshold: float
+    isFastCacheEnabled: bool
+    isFASTVpScheduleEnabled: bool
+    isDiskTechnologyMixed: bool
+    maxSizeLimit: int
+    maxDiskNumberLimit: int
+    isMaxSizeLimitExceeded: bool
+    isMaxDiskNumberLimitExceeded: bool
+    isRPMMixed: bool
 
 
 class PoolCreate(BaseModel):
-    """Schema for creating a new pool."""
-
-    name: str = Field(..., description="Name of the pool", min_length=1, max_length=63)
-    description: Optional[str] = Field(None, description="Description of the pool", max_length=170)
-    raidType: RaidTypeEnum = Field(..., description="RAID type of the pool")
-    raidStripeWidth: Optional[RaidStripeWidthEnum] = Field(None, description="RAID stripe width")
-    sizeFree: int = Field(..., description="Size of available space in the pool, in bytes", ge=0)
-    sizeTotal: int = Field(..., description="Total size of the pool, in bytes", ge=0)
-    sizeUsed: int = Field(..., description="Size of used space in the pool, in bytes", ge=0)
-    sizeSubscribed: int = Field(
-        ...,
-        description="Total size of space in the pool that is subscribed by all storage resources",
-        ge=0,
+    name: str = Field(..., min_length=1, max_length=85)
+    description: Optional[str] = Field(None, max_length=170)
+    raidType: RaidTypeEnum
+    sizeTotal: int
+    alertThreshold: int = Field(50, ge=50, le=84)
+    poolSpaceHarvestHighThreshold: Optional[float] = Field(
+        None, ge=0.0, le=100.0, description="High threshold percentage (0-100)"
     )
-    poolType: TierTypeEnum = Field(..., description="Type of storage tier in the pool")
+    poolSpaceHarvestLowThreshold: Optional[float] = Field(
+        None, ge=0.0, le=100.0, description="Low threshold percentage (0-100)"
+    )
+    snapSpaceHarvestHighThreshold: Optional[float] = Field(
+        None, ge=0.0, le=100.0, description="High threshold percentage (0-100)"
+    )
+    snapSpaceHarvestLowThreshold: Optional[float] = Field(
+        None, ge=0.0, le=100.0, description="Low threshold percentage (0-100)"
+    )
+    isHarvestEnabled: bool = False
+    isSnapHarvestEnabled: bool = False
+    isFASTCacheEnabled: bool = False
+    isFASTVpScheduleEnabled: bool = False
+    type: str = "dynamic"
+
+    @classmethod
+    def model_validator(cls, values):
+        if values.get("isHarvestEnabled"):
+            if values.get("poolSpaceHarvestHighThreshold") is None:
+                raise ValueError("Pool space harvest high threshold must be set when harvesting is enabled")
+            if values.get("poolSpaceHarvestLowThreshold") is None:
+                raise ValueError("Pool space harvest low threshold must be set when harvesting is enabled")
+            if (
+                values.get("poolSpaceHarvestLowThreshold") is not None
+                and values.get("poolSpaceHarvestHighThreshold") is not None
+                and values.get("poolSpaceHarvestLowThreshold") >= values.get("poolSpaceHarvestHighThreshold")
+            ):
+                raise ValueError("Low threshold must be less than high threshold")
+
+        if values.get("isSnapHarvestEnabled"):
+            if values.get("snapSpaceHarvestHighThreshold") is None:
+                raise ValueError("Snap space harvest high threshold must be set when snap harvesting is enabled")
+            if values.get("snapSpaceHarvestLowThreshold") is None:
+                raise ValueError("Snap space harvest low threshold must be set when snap harvesting is enabled")
+            if (
+                values.get("snapSpaceHarvestLowThreshold") is not None
+                and values.get("snapSpaceHarvestHighThreshold") is not None
+                and values.get("snapSpaceHarvestLowThreshold") >= values.get("snapSpaceHarvestHighThreshold")
+            ):
+                raise ValueError("Low threshold must be less than high threshold")
+        return values
 
 
 class PoolUpdate(BaseModel):
-    """Schema for updating an existing pool."""
+    name: Optional[str] = Field(None, min_length=1, max_length=85)
+    description: Optional[str] = Field(None, max_length=170)
+    alertThreshold: Optional[int] = Field(None, ge=50, le=84)
+    poolSpaceHarvestHighThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
+    poolSpaceHarvestLowThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
+    snapSpaceHarvestHighThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
+    snapSpaceHarvestLowThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
+    isHarvestEnabled: Optional[bool] = None
+    isSnapHarvestEnabled: Optional[bool] = None
+    isFASTCacheEnabled: Optional[bool] = None
+    isFASTVpScheduleEnabled: Optional[bool] = None
 
-    name: Optional[str] = Field(None, description="New name for the pool", min_length=1, max_length=63)
-    description: Optional[str] = Field(None, description="New description for the pool", max_length=170)
-    alertThreshold: Optional[int] = Field(None, description="New alert threshold", ge=50, le=84)
-    isFASTCacheEnabled: Optional[bool] = Field(None, description="Enable/disable FAST Cache")
-    isFASTVpScheduleEnabled: Optional[bool] = Field(None, description="Enable/disable scheduled data relocations")
-    isHarvestEnabled: Optional[bool] = Field(None, description="Enable/disable pool space harvesting")
+    @classmethod
+    def model_validator(cls, values):
+        if values.get("isHarvestEnabled"):
+            if values.get("poolSpaceHarvestHighThreshold") is None:
+                raise ValueError("Pool space harvest high threshold must be set when harvesting is enabled")
+            if values.get("poolSpaceHarvestLowThreshold") is None:
+                raise ValueError("Pool space harvest low threshold must be set when harvesting is enabled")
+            if (
+                values.get("poolSpaceHarvestLowThreshold") is not None
+                and values.get("poolSpaceHarvestHighThreshold") is not None
+                and values.get("poolSpaceHarvestLowThreshold") >= values.get("poolSpaceHarvestHighThreshold")
+            ):
+                raise ValueError("Low threshold must be less than high threshold")
+
+        if values.get("isSnapHarvestEnabled"):
+            if values.get("snapSpaceHarvestHighThreshold") is None:
+                raise ValueError("Snap space harvest high threshold must be set when snap harvesting is enabled")
+            if values.get("snapSpaceHarvestLowThreshold") is None:
+                raise ValueError("Snap space harvest low threshold must be set when snap harvesting is enabled")
+            if (
+                values.get("snapSpaceHarvestLowThreshold") is not None
+                and values.get("snapSpaceHarvestHighThreshold") is not None
+                and values.get("snapSpaceHarvestLowThreshold") >= values.get("snapSpaceHarvestHighThreshold")
+            ):
+                raise ValueError("Low threshold must be less than high threshold")
+        return values
+
+
+class Pool(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    raidType: RaidTypeEnum
+    sizeTotal: int
+    sizeFree: int = 0
+    sizeUsed: int = 0
+    sizePreallocated: int = 0
+    dataReductionSizeSaved: int = 0
+    dataReductionPercent: int = 0
+    dataReductionRatio: float = 1.0
+    flashPercentage: int = 100
+    sizeSubscribed: int = Field(0, description="Size of space requested by storage resources")
+    alertThreshold: int = Field(50, ge=50, le=84)
+    hasDataReductionEnabledLuns: bool = False
+    hasDataReductionEnabledFs: bool = False
+    isFASTCacheEnabled: bool = False
+    creationTime: datetime
+    isEmpty: bool = True
+    poolFastVP: Optional[PoolFASTVP] = None
+    tiers: List[PoolTier] = Field(default_factory=list)
+    isHarvestEnabled: bool = False
+    harvestState: Optional[HarvestStateEnum] = HarvestStateEnum.IDLE
+    isSnapHarvestEnabled: bool = False
+    poolSpaceHarvestHighThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
+    poolSpaceHarvestLowThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
+    snapSpaceHarvestHighThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
+    snapSpaceHarvestLowThreshold: Optional[float] = Field(None, ge=0.0, le=100.0)
+    metadataSizeSubscribed: int = 0
+    snapSizeSubscribed: int = 0
+    nonBaseSizeSubscribed: int = 0
+    metadataSizeUsed: int = 0
+    snapSizeUsed: int = 0
+    nonBaseSizeUsed: int = 0
+    rebalanceProgress: Optional[int] = None
+    type: str = "dynamic"
+    isAllFlash: bool = True
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "pool_123",
+                "name": "PerformancePool",
+                "description": "High performance storage pool",
+                "raidType": "RAID5",
+                "sizeTotal": 1000000000000,
+                "sizeFree": 800000000000,
+                "sizeUsed": 200000000000,
+                "sizePreallocated": 0,
+                "dataReductionSizeSaved": 0,
+                "dataReductionPercent": 0,
+                "dataReductionRatio": 1.0,
+                "flashPercentage": 100,
+                "sizeSubscribed": 1000000000000,
+                "alertThreshold": 50,
+                "hasDataReductionEnabledLuns": False,
+                "hasDataReductionEnabledFs": False,
+                "isFASTCacheEnabled": False,
+                "creationTime": "2025-01-03T12:00:00Z",
+                "isEmpty": False,
+                "tiers": [],
+                "isHarvestEnabled": False,
+                "isSnapHarvestEnabled": False,
+                "metadataSizeSubscribed": 0,
+                "snapSizeSubscribed": 0,
+                "nonBaseSizeSubscribed": 0,
+                "metadataSizeUsed": 0,
+                "snapSizeUsed": 0,
+                "nonBaseSizeUsed": 0,
+                "type": "dynamic",
+                "isAllFlash": True,
+            }
+        }
+
+
+class StorageConfiguration(BaseModel):
+    raidType: RaidTypeEnum
+    diskGroup: str
+    diskCount: int
+    stripeWidth: int
+
+
+class PoolAutoConfigurationResponse(BaseModel):
+    name: str
+    description: str
+    storageConfiguration: StorageConfiguration
+    alertThreshold: int = Field(50, ge=50, le=84)
+    poolSpaceHarvestHighThreshold: float = Field(85.0, ge=0.0, le=100.0)
+    poolSpaceHarvestLowThreshold: float = Field(75.0, ge=0.0, le=100.0)
+    snapSpaceHarvestHighThreshold: float = Field(85.0, ge=0.0, le=100.0)
+    snapSpaceHarvestLowThreshold: float = Field(75.0, ge=0.0, le=100.0)
+    isFastCacheEnabled: bool = False
+    isFASTVpScheduleEnabled: bool = False
+    isDiskTechnologyMixed: bool = False
+    maxSizeLimit: int
+    maxDiskNumberLimit: int
+    isMaxSizeLimitExceeded: bool = False
+    isMaxDiskNumberLimitExceeded: bool = False
+    isRPMMixed: bool = False

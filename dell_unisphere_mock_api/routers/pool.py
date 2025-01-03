@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from dell_unisphere_mock_api.controllers.pool_controller import PoolController
 from dell_unisphere_mock_api.core.auth import get_current_user
 from dell_unisphere_mock_api.core.config import settings
-from dell_unisphere_mock_api.schemas.pool import Pool, PoolCreate, PoolUpdate
+from dell_unisphere_mock_api.schemas.pool import Pool, PoolAutoConfigurationResponse, PoolCreate, PoolUpdate
 
 router = APIRouter()
 
@@ -126,3 +126,16 @@ async def delete_pool(pool_id: str, _: dict = Depends(get_current_user)):
     if not success:
         raise HTTPException(status_code=404, detail="Pool not found")
     return Response(status_code=204)
+
+
+@router.post("/types/pool/action/recommendAutoConfiguration", response_model=List[PoolAutoConfigurationResponse])
+async def recommend_auto_configuration(_: dict = Depends(get_current_user)) -> List[PoolAutoConfigurationResponse]:
+    """Get recommended pool configurations based on available drives."""
+    # Check if there are existing pools
+    pools = pool_controller.list_pools()
+    if pools:
+        raise HTTPException(
+            status_code=400, detail="Auto configuration is only available when no pools exist on the system"
+        )
+
+    return pool_controller.recommend_auto_configuration()
