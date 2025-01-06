@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dell-unisphere-mock-api"
-version = "0.2.8"
+version = "0.2.8.1"
 authors = [
   { name="Lyuboslav Petrov", email="petrov.lyuboslav.work@gmail.com" },
 ]
