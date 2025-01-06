@@ -1,125 +1,180 @@
-## Feature Development and Merging Workflow
+# **Coding Conventions and Workflow Guidelines**
 
-1. **Create Feature Branch**
-   - Branch from master: `git checkout -b feature/X`
-   - X should be a short descriptive name for the feature
+## **Branch Naming Conventions**
 
-2. **Development**
-   - Make changes and commit with meaningful messages
-   - Ensure all tests pass: `make test`
-   - Verify commit hooks: `make lint`
+Adopting clear and consistent branch naming conventions enhances collaboration and code management.
 
-3. **Merge to Pilot**
-   - Create pilot branch from master: `git checkout -b pilot`
-   - Merge feature branch: `git merge feature/X`
-   - Resolve any conflicts
-   - Verify:
-     - `make test`
-     - `make lint`
-   - Push pilot branch: `git push origin pilot`
+- **Use Prefixes to Indicate Purpose:**
+  - `feature/`: For new features.
+  - `bugfix/`: For bug fixes.
+  - `hotfix/`: For critical fixes that need immediate attention.
+  - `release/`: For preparing a release.
 
-4. **Update Master**
-   - Merge pilot into master: `git checkout master && git merge pilot`
-   - Verify:
-     - `make test`
-     - `make lint`
+- **Use Descriptive Names:**
+  - Keep branch names concise yet descriptive, using hyphens to separate words.
+  - Example: `feature/user-authentication`.
 
-5. **Release**
-   - Update CHANGELOG.md with changes
-   - Bump version in appropriate files (e.g., pyproject.toml)
-   - Create release tag: `git tag vX.Y.Z`
-   - Push changes: `git push origin master --tags`
+- **Include Issue or Ticket Numbers** (if applicable):
+  - Incorporate relevant issue or ticket numbers to link branches to specific tasks.
+  - Example: `bugfix/1234-fix-login-error`.
 
-**Important Notes:**
-- Never merge directly to master
-- All merges must go through pilot branch
-- Tests and linting must pass at every stage
-- Keep feature branches focused on single features
+---
 
-## Version Update Process
+## **Feature Development and Merging Workflow**
 
-1. **Create Hotfix Branch**
-   - Branch from master: `git checkout -b hotfix/X`
-   - X should be a short descriptive name for the hotfix
+### 1. **Create a Feature Branch**
+- Branch from `main`:
+  ```bash
+  git checkout -b feature/<short-descriptive-name>
+  ```
 
-2. **Make Changes**
-   - Update necessary files (e.g., pyproject.toml, package icons)
-   - Update CHANGELOG.md with changes
-   - Ensure all tests pass: `make test`
-   - Verify commit hooks: `make lint`
+### 2. **Development**
+- Implement changes with regular commits, ensuring commit messages are clear and meaningful.
+- Run tests to ensure code quality:
+  ```bash
+  make test
+  ```
+- Verify code formatting and linting:
+  ```bash
+  make lint
+  ```
+- Update `CHANGELOG.md` and version files (`pyproject.toml`) as part of the development process:
+  ```bash
+  nano CHANGELOG.md  # Document planned changes
+  nano pyproject.toml  # Bump version
+  ```
 
-3. **Bump Version**
-   - Update version in pyproject.toml following semantic versioning
-   - For PyPI package icon updates:
-     - Ensure icon file is in project root
-     - Update package metadata if needed
-     - Verify icon displays correctly in PyPI
+### 3. **Merge to Integration Branch**
+- Create an integration branch (e.g., `develop`) if it doesn't exist:
+  ```bash
+  git checkout -b develop
+  ```
+- Merge the feature branch into the integration branch:
+  ```bash
+  git merge feature/<short-descriptive-name>
+  ```
+- Resolve any merge conflicts.
+- Verify integration by running tests and linting:
+  ```bash
+  make test
+  make lint
+  ```
+- Push the integration branch to the remote repository:
+  ```bash
+  git push origin develop
+  ```
 
-4. **Merge to Pilot**
-   - Create pilot branch from master: `git checkout -b pilot`
-   - Merge hotfix branch: `git merge hotfix/X`
-   - Resolve any conflicts
-   - Verify:
-     - `make test`
-     - `make lint`
-   - Push pilot branch: `git push origin pilot`
+### 4. **Update Main Branch**
+- Merge the integration branch into `main`:
+  ```bash
+  git checkout main
+  git merge develop
+  ```
+- Ensure all tests and linting pass:
+  ```bash
+  make test
+  make lint
+  ```
 
-5. **Update Master**
-   - Merge pilot into master: `git checkout master && git merge pilot`
-   - Verify:
-     - `make test`
-     - `make lint`
+### 5. **Release**
+- Create a release tag:
+  ```bash
+  git tag vX.Y.Z
+  ```
+- Push changes and tags to the remote repository:
+  ```bash
+  git push origin main --tags
+  ```
 
-6. **Release**
-   - Create release tag: `git tag vX.Y.Z`
-   - Push changes: `git push origin master --tags`
-   - Verify PyPI package update
+---
 
-**Hotfix Guidelines:**
-- Only for critical fixes that can't wait for next release
-- Must include version bump
-- Must update CHANGELOG.md
-- Must verify PyPI package updates
+## **Hotfix Workflow**
 
-## Hotfix Flow Process
+### 1. **Create a Hotfix Branch**
+- Branch from `main`:
+  ```bash
+  git checkout -b hotfix/<short-descriptive-name>
+  ```
 
-1. **Identify Issue**
-   - Confirm the issue requires a hotfix
-   - Verify the issue is critical and cannot wait for next release
+### 2. **Implement the Fix**
+- Make necessary code changes to address the issue.
+- Update `CHANGELOG.md` with details of the fix.
+- Update the version in `pyproject.toml` (increment the patch version for hotfixes).
+- Run tests and linting:
+  ```bash
+  make test
+  make lint
+  ```
+- Commit the changes:
+  ```bash
+  git add CHANGELOG.md pyproject.toml
+  git commit -m "hotfix: <description>"
+  ```
 
-2. **Create Hotfix Branch**
-   - Branch from master: `git checkout -b hotfix/X`
-   - X should be a short descriptive name for the hotfix
+### 3. **Merge to Integration Branch**
+- Merge the hotfix branch into the integration branch:
+  ```bash
+  git checkout develop
+  git merge hotfix/<short-descriptive-name>
+  ```
+- Resolve any conflicts and verify integration:
+  ```bash
+  make test
+  make lint
+  ```
+- Push the integration branch:
+  ```bash
+  git push origin develop
+  ```
 
-3. **Implement Fix**
-   - Make necessary code changes
-   - Update version in pyproject.toml
-   - Update CHANGELOG.md with hotfix details
-   - Run tests: `make test`
-   - Run linting: `make lint`
+### 4. **Update Main Branch**
+- Merge the integration branch into `main`:
+  ```bash
+  git checkout main
+  git merge develop
+  ```
+- Ensure all tests and linting pass:
+  ```bash
+  make test
+  make lint
+  ```
 
-4. **Merge to Pilot**
-   - Create pilot branch from master: `git checkout -b pilot`
-   - Merge hotfix branch: `git merge hotfix/X`
-   - Resolve any conflicts
-   - Verify:
-     - `make test`
-     - `make lint`
-   - Push pilot branch: `git push origin pilot`
+### 5. **Release**
+- Create a release tag:
+  ```bash
+  git tag vX.Y.Z
+  ```
+- Push changes and tags:
+  ```bash
+  git push origin main --tags
+  ```
 
-5. **Update Master**
-   - Merge pilot into master: `git checkout master && git merge pilot`
-   - Verify:
-     - `make test`
-     - `make lint`
+---
 
-6. **Release**
-   - Create release tag: `git tag vX.Y.Z`
-   - Push changes: `git push origin master --tags`
-   - Verify PyPI package update
+## **Streamlined Version Update Process**
 
-**Hotfix Best Practices:**
-- Keep hotfixes focused on the specific issue
-- Include comprehensive tests for the fix
-- Document the fix in CHANGELOG.md
-- Communicate the hotfix to relevant stakeholders
+### 1. **Include `CHANGELOG.md` and Version Updates During Development**
+- Update `CHANGELOG.md` and version files (`pyproject.toml`) during feature or hotfix development to avoid redundant steps later.
+
+### 2. **Commit and Verify Updates**
+- Commit changes as part of the development workflow:
+  ```bash
+  git add CHANGELOG.md pyproject.toml
+  git commit -m "chore: update CHANGELOG and bump version to vX.Y.Z"
+  ```
+- Verify using tests and linting.
+
+### 3. **Push and Merge**
+- Merge the branch into `develop` for integration testing.
+- Ensure the integration branch is clean and verified before merging into `main`.
+
+### 4. **Release Directly from `Main`**
+- Once verified, release changes from `main` without additional updates to `CHANGELOG.md` or version files.
+
+---
+
+### **General Best Practices**
+- Avoid direct commits to `main`.
+- Ensure all tests and linting pass at every stage.
+- Use CI/CD pipelines to automate verification steps and releases.
+- Keep branches focused on a single feature, bugfix, or hotfix to simplify reviews and integration.

@@ -21,6 +21,7 @@ from dell_unisphere_mock_api.routers import (
     system_info,
     user,
 )
+from dell_unisphere_mock_api.version import get_version
 
 logging_config = {
     "version": 1,
@@ -118,7 +119,7 @@ def custom_openapi():
 app = FastAPI(
     title="Mock Unity Unisphere API",
     description="A mock implementation of Dell Unity Unisphere Management REST API.",
-    version="1.0.0",
+    version=get_version(),
     swagger_ui_parameters={
         "persistAuthorization": True,
         "requestInterceptor": """(req) => {

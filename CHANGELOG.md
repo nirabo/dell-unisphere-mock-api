@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.9.0] - 2025-01-06
+
+### Added
+- Version management system with automatic verification
+- Added `version.py` module as single source of truth for version info
+- Added pre-commit hook for version consistency checks
+- Added `verify-version` target in Makefile
+- Version verification script
+
+### Changed
+- Updated version verification to read directly from pyproject.toml
+- Improved version consistency across the project
+- Enhanced version management documentation in CONVENTIONS.md
+
 ## [0.2.8.1] - 2025-01-08
 
 ### Hotfix
