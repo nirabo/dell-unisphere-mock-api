@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 
 class RaidTypeEnum(str, Enum):
@@ -123,37 +123,38 @@ class PoolCreate(BaseModel):
     isFASTVpScheduleEnabled: bool = False
     type: str = "dynamic"
 
-    @validator("poolSpaceHarvestHighThreshold", "poolSpaceHarvestLowThreshold")
+    @field_validator("poolSpaceHarvestHighThreshold", "poolSpaceHarvestLowThreshold")
     @classmethod
-    def validate_pool_harvest_thresholds(cls, v, values):
-        if values.get("isHarvestEnabled"):
+    def validate_pool_harvest_thresholds(cls, v: float, info: ValidationInfo) -> float:
+        if info.data.get("isHarvestEnabled"):
             if v is None:
                 raise ValueError("Pool space harvest high threshold must be set when harvesting is enabled")
         return v
 
-    @validator("snapSpaceHarvestHighThreshold", "snapSpaceHarvestLowThreshold")
+    @field_validator("snapSpaceHarvestHighThreshold", "snapSpaceHarvestLowThreshold")
     @classmethod
-    def validate_snap_harvest_thresholds(cls, v, values):
-        if values.get("isSnapHarvestEnabled"):
+    def validate_snap_harvest_thresholds(cls, v: float, info: ValidationInfo) -> float:
+        if info.data.get("isSnapHarvestEnabled"):
             if v is None:
                 raise ValueError("Snap space harvest high threshold must be set when snap harvesting is enabled")
         return v
 
-    @validator("poolSpaceHarvestLowThreshold", "poolSpaceHarvestHighThreshold", always=True)
-    def validate_threshold_relationships(cls, v, values):
-        if values.get("isHarvestEnabled"):
+    @field_validator("poolSpaceHarvestLowThreshold", "poolSpaceHarvestHighThreshold", mode="after")
+    @classmethod
+    def validate_threshold_relationships(cls, v: float, info: ValidationInfo) -> float:
+        if info.data.get("isHarvestEnabled"):
             if (
-                values.get("poolSpaceHarvestLowThreshold") is not None
-                and values.get("poolSpaceHarvestHighThreshold") is not None
-                and values.get("poolSpaceHarvestLowThreshold") >= values.get("poolSpaceHarvestHighThreshold")
+                info.data.get("poolSpaceHarvestLowThreshold") is not None
+                and info.data.get("poolSpaceHarvestHighThreshold") is not None
+                and info.data.get("poolSpaceHarvestLowThreshold") >= info.data.get("poolSpaceHarvestHighThreshold")
             ):
                 raise ValueError("Low threshold must be less than high threshold")
 
-        if values.get("isSnapHarvestEnabled"):
+        if info.data.get("isSnapHarvestEnabled"):
             if (
-                values.get("snapSpaceHarvestLowThreshold") is not None
-                and values.get("snapSpaceHarvestHighThreshold") is not None
-                and values.get("snapSpaceHarvestLowThreshold") >= values.get("snapSpaceHarvestHighThreshold")
+                info.data.get("snapSpaceHarvestLowThreshold") is not None
+                and info.data.get("snapSpaceHarvestHighThreshold") is not None
+                and info.data.get("snapSpaceHarvestLowThreshold") >= info.data.get("snapSpaceHarvestHighThreshold")
             ):
                 raise ValueError("Low threshold must be less than high threshold")
         return v
@@ -172,37 +173,38 @@ class PoolUpdate(BaseModel):
     isFASTCacheEnabled: Optional[bool] = None
     isFASTVpScheduleEnabled: Optional[bool] = None
 
-    @validator("poolSpaceHarvestHighThreshold", "poolSpaceHarvestLowThreshold")
+    @field_validator("poolSpaceHarvestHighThreshold", "poolSpaceHarvestLowThreshold")
     @classmethod
-    def validate_pool_harvest_thresholds(cls, v, values):
-        if values.get("isHarvestEnabled") is True:  # Only validate if explicitly set to True
+    def validate_pool_harvest_thresholds(cls, v: float, info: ValidationInfo) -> float:
+        if info.data.get("isHarvestEnabled") is True:  # Only validate if explicitly set to True
             if v is None:
                 raise ValueError("Pool space harvest high threshold must be set when harvesting is enabled")
         return v
 
-    @validator("snapSpaceHarvestHighThreshold", "snapSpaceHarvestLowThreshold")
+    @field_validator("snapSpaceHarvestHighThreshold", "snapSpaceHarvestLowThreshold")
     @classmethod
-    def validate_snap_harvest_thresholds(cls, v, values):
-        if values.get("isSnapHarvestEnabled") is True:  # Only validate if explicitly set to True
+    def validate_snap_harvest_thresholds(cls, v: float, info: ValidationInfo) -> float:
+        if info.data.get("isSnapHarvestEnabled") is True:  # Only validate if explicitly set to True
             if v is None:
                 raise ValueError("Snap space harvest high threshold must be set when snap harvesting is enabled")
         return v
 
-    @validator("poolSpaceHarvestLowThreshold", "poolSpaceHarvestHighThreshold", always=True)
-    def validate_threshold_relationships(cls, v, values):
-        if values.get("isHarvestEnabled") is True:  # Only validate if explicitly set to True
+    @field_validator("poolSpaceHarvestLowThreshold", "poolSpaceHarvestHighThreshold", mode="after")
+    @classmethod
+    def validate_threshold_relationships(cls, v: float, info: ValidationInfo) -> float:
+        if info.data.get("isHarvestEnabled") is True:  # Only validate if explicitly set to True
             if (
-                values.get("poolSpaceHarvestLowThreshold") is not None
-                and values.get("poolSpaceHarvestHighThreshold") is not None
-                and values.get("poolSpaceHarvestLowThreshold") >= values.get("poolSpaceHarvestHighThreshold")
+                info.data.get("poolSpaceHarvestLowThreshold") is not None
+                and info.data.get("poolSpaceHarvestHighThreshold") is not None
+                and info.data.get("poolSpaceHarvestLowThreshold") >= info.data.get("poolSpaceHarvestHighThreshold")
             ):
                 raise ValueError("Low threshold must be less than high threshold")
 
-        if values.get("isSnapHarvestEnabled") is True:  # Only validate if explicitly set to True
+        if info.data.get("isSnapHarvestEnabled") is True:  # Only validate if explicitly set to True
             if (
-                values.get("snapSpaceHarvestLowThreshold") is not None
-                and values.get("snapSpaceHarvestHighThreshold") is not None
-                and values.get("snapSpaceHarvestLowThreshold") >= values.get("snapSpaceHarvestHighThreshold")
+                info.data.get("snapSpaceHarvestLowThreshold") is not None
+                and info.data.get("snapSpaceHarvestHighThreshold") is not None
+                and info.data.get("snapSpaceHarvestLowThreshold") >= info.data.get("snapSpaceHarvestHighThreshold")
             ):
                 raise ValueError("Low threshold must be less than high threshold")
         return v
@@ -249,11 +251,8 @@ class Pool(BaseModel):
     type: str
     isAllFlash: bool
 
-    class Config:
-        """Pydantic model configuration."""
-
-        json_encoders = {datetime: lambda v: v.isoformat()}
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "pool_123",
                 "name": "PerformancePool",
@@ -287,6 +286,7 @@ class Pool(BaseModel):
                 "isAllFlash": True,
             }
         }
+    )
 
 
 class StorageConfiguration(BaseModel):

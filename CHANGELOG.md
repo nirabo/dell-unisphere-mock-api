@@ -5,12 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.7] - 2025-01-07
+## [0.2.8] - 2025-01-08
 
 ### Improvements
-- Comprehensive NAS server endpoints and tests
-- Updated NAS server models, routers and schemas
-- Streamlined test routes
+- Updated NAS server models with enhanced validation
+- Refactored NAS server router endpoints for better error handling
+- Improved pool controller datetime handling with timezone awareness
+
+### Maintenance
+- Fixed datetime.utcnow() deprecation warnings across controllers and schemas
+- Updated test suite to match new datetime handling
+- Added comprehensive tests for NAS server functionality
+- Streamlined schema validation across all endpoints
+
+### Bug Fixes
+- Fixed edge cases in NAS server model validation
+- Resolved timezone inconsistencies in pool creation timestamps
 
 ## [0.2.6] - 2025-01-06
 

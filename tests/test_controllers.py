@@ -129,8 +129,15 @@ class TestNasServerController:
             description="Test NAS server",
             homeSP="spa",
             pool="pool_1",
-            currentUnixDirectoryService="NONE",
-            isMultiProtocolEnabled=True,
+            isMultiProtocolEnabled=False,
+            isReplicationDestination=False,
+            defaultUnixUser="root",
+            defaultWindowsUser="Administrator",
+            currentUnixDirectory=None,
+            dns_config=None,
+            network_interfaces=[],
+            user_mapping=None,
+            authentication_type="None",
         )
 
     @pytest.mark.asyncio

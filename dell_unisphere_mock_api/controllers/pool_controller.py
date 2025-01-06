@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List, Optional
 from uuid import uuid4
 
@@ -70,7 +70,7 @@ class PoolController:
         pool_dict.update(
             {
                 "id": pool_id,
-                "creationTime": datetime.utcnow(),
+                "creationTime": datetime.now(UTC),
                 "sizeFree": pool_create.sizeTotal,
                 "sizeUsed": 0,
                 "sizePreallocated": 0,
