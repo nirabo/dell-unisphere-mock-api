@@ -173,6 +173,36 @@ Adopting clear and consistent branch naming conventions enhances collaboration a
 
 ---
 
+## **GitHub Workflow and Release Process**
+
+### Branch Strategy
+1. Feature Development
+   - Create feature branches from `integration` branch
+   - Branch naming: `feature/feature-name`
+   - Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/)
+
+2. Pull Request Process
+   - Create PR from feature branch to `integration`
+   - PR title must follow Conventional Commits format
+   - PR must pass all automated checks:
+     - All tests must pass
+     - Code must pass linting
+     - Version consistency must be verified
+   - PR must be approved by at least one reviewer
+   - After approval and passing checks, PR can be merged to `integration`
+
+3. Release Process
+   - Create PR from `integration` to `main` when ready to release
+   - PR must pass all automated checks and be approved
+   - Upon merging to `main`:
+     - GitHub Actions will automatically create a new release
+     - Release will be tagged with version from `pyproject.toml`
+     - Release notes will be generated from `CHANGELOG.md`
+
+### Version Management
+
+---
+
 ### **General Best Practices**
 - Avoid direct commits to `main`.
 - Ensure all tests and linting pass at every stage.
