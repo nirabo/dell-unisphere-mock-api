@@ -1,4 +1,4 @@
-.PHONY: clean clean-pyc clean-test clean-build help
+.PHONY: clean clean-pyc clean-test clean-build help verify-version
 .DEFAULT_GOAL := help
 
 define PRINT_HELP_PYSCRIPT
@@ -91,3 +91,6 @@ release: dist ## package and upload a release
 
 run: venv ## run development server
 	$(VENV_BIN)/uvicorn dell_unisphere_mock_api.main:app --reload
+
+verify-version:  ## Verify version consistency
+	python scripts/verify_version.py

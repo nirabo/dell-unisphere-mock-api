@@ -39,3 +39,11 @@ repos:
       - id: bandit
         args: ["-c", "pyproject.toml"]
         additional_dependencies: ["bandit[toml]"]
+
+  - repo: local
+    hooks:
+      - id: verify-version
+        name: verify version consistency
+        entry: python scripts/verify_version.py
+        language: system
+        pass_filenames: false
