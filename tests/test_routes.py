@@ -121,6 +121,132 @@ class TestStorageResourceRoutes:
         response = test_client.post("/api/types/storageResource/instances", json=sample_resource_data)
         assert response.status_code == 401
 
+    def test_create_lun_action(self, test_client, auth_headers):
+        headers, _ = auth_headers
+        lun_data = {"name": "test_lun_1", "lunParameters": {"pool": {"id": "pool_1"}, "size": 1073741824}}  # 1GB
+        response = test_client.post("/api/types/storageResource/action/createLun", json=lun_data, headers=headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert "@base" in data
+        assert "updated" in data
+        assert "links" in data
+        assert "content" in data
+        assert "storageResource" in data["content"]
+        assert "id" in data["content"]["storageResource"]
+        self.last_created_resource = {"id": data["content"]["storageResource"]["id"]}
+
+    def test_create_lun_action_missing_fields(self, test_client, auth_headers):
+        headers, _ = auth_headers
+        # Test missing name
+        lun_data = {"lunParameters": {"pool": {"id": "pool_1"}, "size": 1073741824}}
+        response = test_client.post("/api/types/storageResource/action/createLun", json=lun_data, headers=headers)
+        assert response.status_code == 400
+
+        # Test missing lunParameters
+        lun_data = {"name": "test_lun_1"}
+        response = test_client.post("/api/types/storageResource/action/createLun", json=lun_data, headers=headers)
+        assert response.status_code == 400
+
+    def test_modify_lun_action(self, test_client, auth_headers):
+        headers, _ = auth_headers
+        # First create a LUN
+        self.test_create_lun_action(test_client, auth_headers)
+
+        # Modify the LUN
+        modify_data = {"description": "Modified Lun.", "lunParameters": {"size": 3221225472}}  # 3GB
+        response = test_client.post(
+            f"/api/types/storageResource/{self.last_created_resource['id']}/action/modifyLun",
+            json=modify_data,
+            headers=headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+
+        # Verify changes
+        response = test_client.get(
+            f"/api/types/storageResource/instances/{self.last_created_resource['id']}", headers=headers
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["description"] == "Modified Lun."
+        assert data["sizeTotal"] == 3221225472
+
+    def test_expand_lun_action(self, test_client, auth_headers):
+        headers, _ = auth_headers
+        # First create a LUN
+        self.test_create_lun_action(test_client, auth_headers)
+
+        # Expand the LUN
+        expand_data = {"size": 4294967296}  # 4GB
+        response = test_client.post(
+            f"/api/types/storageResource/{self.last_created_resource['id']}/action/expandLun",
+            json=expand_data,
+            headers=headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+
+        # Verify changes
+        response = test_client.get(
+            f"/api/types/storageResource/instances/{self.last_created_resource['id']}", headers=headers
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["sizeTotal"] == expand_data["size"]
+
+    def test_expand_lun_action_smaller_size(self, test_client, auth_headers):
+        headers, _ = auth_headers
+        # First create a LUN
+        self.test_create_lun_action(test_client, auth_headers)
+
+        # Try to expand with smaller size
+        expand_data = {"size": 536870912}  # 512MB (smaller than original 1GB)
+        response = test_client.post(
+            f"/api/types/storageResource/{self.last_created_resource['id']}/action/expandLun",
+            json=expand_data,
+            headers=headers,
+        )
+        assert response.status_code == 400
+        data = response.json()
+        assert "must be larger than current size" in data["detail"]
+
+    def test_expand_lun_action_missing_size(self, test_client, auth_headers):
+        headers, _ = auth_headers
+        # First create a LUN
+        self.test_create_lun_action(test_client, auth_headers)
+
+        # Try to expand without size
+        expand_data = {}
+        response = test_client.post(
+            f"/api/types/storageResource/{self.last_created_resource['id']}/action/expandLun",
+            json=expand_data,
+            headers=headers,
+        )
+        assert response.status_code == 400
+        data = response.json()
+        assert "Missing required field: size" in data["detail"]
+
+    def test_delete_storage_resource_action(self, test_client, auth_headers):
+        headers, _ = auth_headers
+        # First create a LUN
+        self.test_create_lun_action(test_client, auth_headers)
+
+        # Delete using action endpoint
+        response = test_client.post(
+            f"/api/types/storageResource/{self.last_created_resource['id']}/action/delete", headers=headers
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+
+        # Verify deletion
+        response = test_client.get(
+            f"/api/types/storageResource/instances/{self.last_created_resource['id']}", headers=headers
+        )
+        assert response.status_code == 404
+
 
 class TestFilesystemRoutes:
     def setup_method(self):

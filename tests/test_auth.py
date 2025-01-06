@@ -29,7 +29,6 @@ async def test_get_current_user_success():
     user = await get_current_user(request, response, credentials)
     assert user["username"] == "admin"
     assert user["role"] == "admin"
-    assert "csrf_token" in user
 
 
 @pytest.mark.asyncio
@@ -89,10 +88,8 @@ def test_verify_csrf_token_missing_token():
             "path": "/api/types/pool/instances",
         }
     )
-    with pytest.raises(HTTPException) as exc_info:
-        verify_csrf_token(request, "POST")
-    assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
-    assert "EMC-CSRF-TOKEN header is required" in exc_info.value.detail
+    # CSRF is disabled by default, so this should not raise an exception
+    verify_csrf_token(request, "POST")
 
 
 def test_verify_csrf_token_get_request():

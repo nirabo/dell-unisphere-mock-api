@@ -7,6 +7,8 @@ from typing import Dict, Optional
 from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
+from dell_unisphere_mock_api.core.config import settings
+
 # Security configuration
 security = HTTPBasic()
 
@@ -82,33 +84,53 @@ async def get_current_user(
         samesite="lax",  # Added for better security with Swagger UI
     )
 
-    # Generate and set CSRF token
-    csrf_token = generate_csrf_token()
-    response.headers["EMC-CSRF-TOKEN"] = csrf_token
+    # Only set CSRF token if enabled
+    if settings.CSRF_ENABLED:
+        csrf_token = generate_csrf_token()
+        response.headers["EMC-CSRF-TOKEN"] = csrf_token
+        print(f"Generated CSRF token: {csrf_token}")
+        print(f"Response headers: {dict(response.headers)}")
+        return {
+            "username": user["username"],
+            "role": user["role"],
+            "csrf_token": csrf_token,
+        }
 
     return {
         "username": user["username"],
         "role": user["role"],
-        "csrf_token": csrf_token,
     }
 
 
 def verify_csrf_token(request: Request, method: str) -> None:
     """Verify CSRF token for POST, PATCH and DELETE requests."""
+    # Skip CSRF verification if disabled
+    if not settings.CSRF_ENABLED:
+        return
+
+    print(f"Verifying CSRF token for {method} request to {request.url.path}")
+    print(f"Request headers: {dict(request.headers)}")
+
     if method not in ["POST", "PATCH", "DELETE"]:
+        print("Skipping CSRF check - not a POST/PATCH/DELETE request")
         return
 
     # Skip CSRF check for the auth endpoint
     if request.url.path == "/api/auth":
+        print("Skipping CSRF check - auth endpoint")
         return
 
     # Skip CSRF check only for unauthorized requests to non-GET methods
     if not request.headers.get("Authorization"):
+        print("Skipping CSRF check - no Authorization header")
         return
 
-    token = request.headers.get("EMC-CSRF-TOKEN")
+    # Check for CSRF token in both uppercase and lowercase variants
+    token = request.headers.get("EMC-CSRF-TOKEN") or request.headers.get("emc-csrf-token")
     if not token:
+        print("CSRF token missing from request headers")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="EMC-CSRF-TOKEN header is required for POST, PATCH and DELETE requests",
         )
+    print(f"Found valid CSRF token: {token}")

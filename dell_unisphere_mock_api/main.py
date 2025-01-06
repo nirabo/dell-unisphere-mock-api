@@ -78,19 +78,38 @@ def custom_openapi():
     # Get the original schema
     openapi_schema = original_openapi(app)
 
-    # Add X-EMC-REST-CLIENT header to security scheme
-    openapi_schema["components"]["securitySchemes"]["basicAuth"] = {
-        "type": "http",
-        "scheme": "basic",
-        "description": "Basic authentication with X-EMC-REST-CLIENT header",
-        "x-emc-rest-client": {"type": "apiKey", "in": "header", "name": "X-EMC-REST-CLIENT", "value": "true"},
+    # Add security schemes
+    openapi_schema["components"]["securitySchemes"] = {
+        "basicAuth": {
+            "type": "http",
+            "scheme": "basic",
+            "description": "Basic authentication with X-EMC-REST-CLIENT header",
+        },
+        "emcRestClient": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-EMC-REST-CLIENT",
+            "description": "Required header for all requests",
+        },
+        "emcCsrfToken": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "EMC-CSRF-TOKEN",
+            "description": "Required header for POST, PATCH and DELETE requests. Obtained from /api/auth endpoint.",
+        },
     }
 
-    # Apply the security scheme to all operations
+    # Apply security schemes to all operations
     for path in openapi_schema["paths"].values():
         for operation in path.values():
             if "security" not in operation:
-                operation["security"] = [{"basicAuth": []}]
+                operation["security"] = [
+                    {"basicAuth": []},
+                    {"emcRestClient": []},
+                ]
+            # Add CSRF token requirement for POST, PATCH, DELETE methods
+            if operation.get("method", "").upper() in ["POST", "PATCH", "DELETE"]:
+                operation["security"].append({"emcCsrfToken": []})
 
     _openapi_schema = openapi_schema
     return _openapi_schema
@@ -101,9 +120,11 @@ app = FastAPI(
     description="A mock implementation of Dell Unity Unisphere Management REST API.",
     version="1.0.0",
     swagger_ui_parameters={
-        "persistAuthorization": True,  # Keep authentication between page reloads
+        "persistAuthorization": True,
         "requestInterceptor": """(req) => {
-            // Add X-EMC-REST-CLIENT header to all requests
+            console.log('Starting request interceptor');
+
+            // Add X-EMC-REST-CLIENT header
             req.headers['X-EMC-REST-CLIENT'] = 'true';
 
             // Add Authorization header if credentials are provided
@@ -112,13 +133,34 @@ app = FastAPI(
                 const {username, password} = JSON.parse(auth);
                 req.headers['Authorization'] = 'Basic ' + btoa(username + ':' + password);
             }
+
+            // For POST, PATCH, DELETE requests, add CSRF token
+            if (['POST', 'PATCH', 'DELETE'].includes(req.method.toUpperCase()) && !req.url.endsWith('/api/auth')) {
+                // First try to get token from localStorage
+                const storedToken = localStorage.getItem('emc_csrf_token');
+                if (storedToken) {
+                    req.headers['EMC-CSRF-TOKEN'] = storedToken;
+                    console.log('Added stored CSRF token:', storedToken);
+                } else {
+                    console.log('No CSRF token found in storage');
+                }
+            }
+
+            console.log('Final request headers:', req.headers);
             return req;
         }""",
-        "initOAuth": {
-            "clientId": "unisphere-client",
-            "appName": "Unisphere Mock API",
-            "usePkceWithAuthorizationCodeGrant": True,
-        },
+        "responseInterceptor": """(response) => {
+            console.log('Response interceptor:', response.url);
+
+            // Get CSRF token from response headers
+            const token = response.headers.get('EMC-CSRF-TOKEN');
+            if (token) {
+                console.log('Got CSRF token from response:', token);
+                localStorage.setItem('emc_csrf_token', token);
+            }
+
+            return response;
+        }""",
     },
 )
 

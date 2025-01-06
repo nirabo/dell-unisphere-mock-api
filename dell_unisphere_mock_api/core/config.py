@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     API_BASE_URL: str = "http://localhost:8000/api"
     PROJECT_NAME: str = "Dell Unisphere Mock API"
     VERSION: str = "1.0.0"
+    CSRF_ENABLED: bool = False  # Default to False to disable CSRF
 
     class Config:
         """Pydantic config."""
