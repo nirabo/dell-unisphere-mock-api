@@ -23,6 +23,45 @@ MOCK_USERS: Dict[str, Dict[str, str]] = {
 }
 
 
+class UnityAuthMiddleware:
+    def __init__(self):
+        self.csrf_tokens = {}
+
+    async def __call__(self, request: Request, call_next):
+        # Validate required headers
+        if not request.headers.get("X-EMC-REST-CLIENT"):
+            raise HTTPException(403, "X-EMC-REST-CLIENT header required")
+
+        # CSRF protection for state-changing methods
+        if request.method in ("POST", "PUT", "DELETE"):
+            csrf_token = request.headers.get("EMC-CSRF-TOKEN")
+            client_id = request.cookies.get("EMC-SESSION-ID")
+
+            if not csrf_token or not self._validate_csrf(client_id, csrf_token):
+                raise HTTPException(403, "Invalid CSRF token")
+
+        response = await call_next(request)
+
+        # Set initial CSRF token for GET requests
+        if request.method == "GET" and not request.cookies.get("EMC-SESSION-ID"):
+            session_id = secrets.token_urlsafe(16)
+            csrf_token = self._generate_csrf_token(session_id)
+            response.set_cookie(key="EMC-SESSION-ID", value=session_id, httponly=True)
+            response.headers["EMC-CSRF-TOKEN"] = csrf_token
+
+        return response
+
+    def _generate_csrf_token(self, session_id: str) -> str:
+        token = secrets.token_urlsafe(32)
+        self.csrf_tokens[session_id] = token
+        return token
+
+    def _validate_csrf(self, session_id: Optional[str], token: str) -> bool:
+        if not session_id:
+            return False
+        return secrets.compare_digest(token, self.csrf_tokens.get(session_id, ""))
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a stored password."""
     # For testing purposes, we'll do a simple comparison

@@ -44,6 +44,6 @@ repos:
     hooks:
       - id: verify-version
         name: verify version consistency
-        entry: python scripts/verify_version.py
+        entry: python3 scripts/verify_version.py
         language: system
         pass_filenames: false

@@ -1,0 +1,4 @@
+http://localhost:8111/api/auth
+  -H 'Accept: application/json'
+  -H 'Content-Type: application/json'
+  -H 'Authorization: admin:Password123!'
