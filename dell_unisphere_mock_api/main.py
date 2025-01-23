@@ -7,6 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_token
+from dell_unisphere_mock_api.middleware.response_headers import ResponseHeaderMiddleware
 from dell_unisphere_mock_api.routers import (
     auth,
     disk,
@@ -17,6 +18,7 @@ from dell_unisphere_mock_api.routers import (
     nas_server,
     pool,
     pool_unit,
+    session,
     storage_resource,
     system_info,
     user,
@@ -176,6 +178,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add response headers middleware
+app.add_middleware(ResponseHeaderMiddleware)
+
 
 # Middleware to verify CSRF token for POST, PATCH and DELETE requests
 @app.middleware("http")
@@ -192,6 +197,7 @@ async def csrf_middleware(request: Request, call_next) -> Response:
 
 # Configure routers
 app.include_router(auth.router, prefix="/api", tags=["Auth"])
+app.include_router(session.router, tags=["Session"])
 app.include_router(
     job.router,
     prefix="/api/types/job",
