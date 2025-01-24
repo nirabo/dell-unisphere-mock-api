@@ -1,5 +1,4 @@
 import base64
-from typing import Dict
 
 import pytest
 from fastapi.testclient import TestClient

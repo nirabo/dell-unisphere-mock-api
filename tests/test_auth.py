@@ -2,6 +2,7 @@ import pytest
 from fastapi import HTTPException, Request, Response, status
 from fastapi.security import HTTPBasicCredentials
 from fastapi.testclient import TestClient
+from httpx import ASGITransport
 
 from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_token, verify_password
 from dell_unisphere_mock_api.main import app

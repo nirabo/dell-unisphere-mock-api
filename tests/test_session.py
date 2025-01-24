@@ -1,6 +1,7 @@
 import base64
 
 from fastapi.testclient import TestClient
+from httpx import ASGITransport
 
 from dell_unisphere_mock_api.main import app
 

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import HTTPException, Request
@@ -28,7 +28,7 @@ class SystemInfoController:
     def _create_response(self, request: Request, entries: List[Entry]) -> ApiResponse:
         """Create a standardized API response"""
         base_url = str(request.base_url)
-        current_time = datetime.utcnow()
+        current_time = datetime.now(timezone.utc)
 
         return ApiResponse(
             **{
@@ -46,7 +46,7 @@ class SystemInfoController:
                 "@base": f"{base_url}api/instances/basicSystemInfo",
                 "content": system_info,
                 "links": [Link(rel="self", href=f"/{system_info.id}")],
-                "updated": datetime.utcnow(),
+                "updated": datetime.now(timezone.utc),
             }
         )
 

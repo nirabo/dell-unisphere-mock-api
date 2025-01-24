@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 from uuid import uuid4
 
@@ -20,7 +20,7 @@ class SessionController:
         return ApiResponse(
             **{
                 "@base": f"{base_url}{request_path}?per_page=2000",
-                "updated": datetime.utcnow(),
+                "updated": datetime.now(timezone.utc),
                 "links": [Link(rel="self", href="&page=1")],
                 "entries": entries,
             }
@@ -33,7 +33,7 @@ class SessionController:
                 "@base": f"{base_url}/api/instances/loginSessionInfo",
                 "content": session,
                 "links": [Link(rel="self", href=f"/{session.id}")],
-                "updated": datetime.utcnow(),
+                "updated": datetime.now(timezone.utc),
             }
         )
 
@@ -43,7 +43,7 @@ class SessionController:
         for session in self.sessions.values():
             if session.user.name == username:
                 # Update last activity and return existing session
-                session.last_activity = datetime.utcnow()
+                session.last_activity = datetime.now(timezone.utc)
                 return session
 
         # Create new session if user doesn't have one
@@ -58,7 +58,7 @@ class SessionController:
             roles=roles,
             idleTimeout=self.idle_timeout,
             isPasswordChangeRequired=user.password_change_required,
-            last_activity=datetime.utcnow(),
+            last_activity=datetime.now(timezone.utc),
         )
         self.sessions[session_id] = session
         return session
@@ -92,17 +92,17 @@ class SessionController:
             return False
 
         # Check if session has timed out
-        if datetime.utcnow() - session.last_activity > timedelta(seconds=session.idleTimeout):
+        if datetime.now(timezone.utc) - session.last_activity > timedelta(seconds=session.idleTimeout):
             self.delete_session(session_id)
             return False
 
         # Update last activity
-        session.last_activity = datetime.utcnow()
+        session.last_activity = datetime.now(timezone.utc)
         return True
 
     def _cleanup_expired_sessions(self) -> None:
         """Remove expired sessions."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         expired = [
             session_id
             for session_id, session in self.sessions.items()

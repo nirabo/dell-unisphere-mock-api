@@ -1,6 +1,7 @@
 """Test module for user management endpoints."""
 
 import base64
+from typing import Dict
 
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -10,7 +11,7 @@ from dell_unisphere_mock_api.main import app
 client = TestClient(app)
 
 
-def get_auth_headers(username: str = "admin", password: str = "Password123!") -> dict:
+def get_auth_headers(username: str = "admin", password: str = "Password123!") -> Dict:
     """
     Generate authentication headers for API requests.
 

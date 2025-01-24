@@ -6,7 +6,7 @@ cfgv==3.4.0
 click==8.1.8
 coverage==7.6.10
 cryptography==44.0.0
--e git+ssh://git@gitlab.com/petrov.lyuboslav/dell-unisphere-mock-api.git@0856f30c0db5855c6a8c80aa8f61a1e5d9c0b9e0#egg=dell_unisphere_mock_api
+# -e git+ssh://git@gitlab.com/petrov.lyuboslav/dell-unisphere-mock-api.git@0856f30c0db5855c6a8c80aa8f61a1e5d9c0b9e0#egg=dell_unisphere_mock_api
 distlib==0.3.9
 ecdsa==0.19.0
 fastapi==0.115.6
