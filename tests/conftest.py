@@ -3,6 +3,9 @@ import base64
 import pytest
 from fastapi.testclient import TestClient
 
+from dell_unisphere_mock_api.controllers.cifs_server_controller import CIFSServerController
+from dell_unisphere_mock_api.controllers.nfs_share_controller import NFSShareController
+from dell_unisphere_mock_api.controllers.quota_controller import QuotaController
 from dell_unisphere_mock_api.main import app
 from dell_unisphere_mock_api.models.disk import DiskModel
 from dell_unisphere_mock_api.models.disk_group import DiskGroupModel
@@ -20,6 +23,9 @@ def clear_data():
     disk_model = DiskModel()
     disk_group_model = DiskGroupModel()
     pool_unit_model = PoolUnitModel()
+    cifs_server_controller = CIFSServerController()
+    nfs_share_controller = NFSShareController()
+    quota_controller = QuotaController()
 
     # Clear all data
     pool_model.pools.clear()
@@ -30,6 +36,16 @@ def clear_data():
         disk_group_model.disk_groups.clear()
     if hasattr(pool_unit_model, "pool_units"):
         pool_unit_model.pool_units.clear()
+    if hasattr(cifs_server_controller, "cifs_servers"):
+        cifs_server_controller.cifs_servers.clear()
+    if hasattr(nfs_share_controller, "nfs_shares"):
+        nfs_share_controller.nfs_shares.clear()
+    if hasattr(quota_controller, "quota_configs"):
+        quota_controller.quota_configs.clear()
+    if hasattr(quota_controller, "tree_quotas"):
+        quota_controller.tree_quotas.clear()
+    if hasattr(quota_controller, "user_quotas"):
+        quota_controller.user_quotas.clear()
 
     # Clear job data
     job_model = JobModel()

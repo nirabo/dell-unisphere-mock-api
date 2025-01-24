@@ -10,14 +10,17 @@ from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_toke
 from dell_unisphere_mock_api.middleware.response_headers import ResponseHeaderMiddleware
 from dell_unisphere_mock_api.routers import (
     auth,
+    cifs_server,
     disk,
     disk_group,
     filesystem,
     job,
     lun,
     nas_server,
+    nfs_share,
     pool,
     pool_unit,
+    quota,
     session,
     storage_resource,
     system_info,
@@ -199,47 +202,21 @@ async def csrf_middleware(request: Request, call_next) -> Response:
 app.include_router(auth.router, prefix="/api", tags=["Auth"])
 app.include_router(session.router, tags=["Session"])
 app.include_router(
-    job.router,
-    prefix="/api/types/job",
-    tags=["Job"],
-    dependencies=[Depends(get_current_user)],
+    storage_resource.router, prefix="/api", tags=["Storage Resource"], dependencies=[Depends(get_current_user)]
 )
-app.include_router(
-    storage_resource.router,
-    prefix="/api",
-    tags=["Storage Resource"],
-    dependencies=[Depends(get_current_user)],
-)
-app.include_router(
-    filesystem.router,
-    prefix="/api",
-    tags=["Filesystem"],
-    dependencies=[Depends(get_current_user)],
-)
-app.include_router(
-    nas_server.router,
-    prefix="/api",
-    tags=["NAS Server"],
-    dependencies=[Depends(get_current_user)],
-)
-app.include_router(pool.router, prefix="/api", tags=["Pool"], dependencies=[Depends(get_current_user)])
+app.include_router(filesystem.router, prefix="/api", tags=["Filesystem"], dependencies=[Depends(get_current_user)])
 app.include_router(lun.router, prefix="/api", tags=["LUN"], dependencies=[Depends(get_current_user)])
-app.include_router(
-    pool_unit.router,
-    prefix="/api",
-    tags=["Pool Unit"],
-    dependencies=[Depends(get_current_user)],
-)
-app.include_router(
-    disk_group.router,
-    prefix="/api",
-    tags=["Disk Group"],
-    dependencies=[Depends(get_current_user)],
-)
+app.include_router(pool.router, prefix="/api", tags=["Pool"], dependencies=[Depends(get_current_user)])
+app.include_router(pool_unit.router, prefix="/api", tags=["Pool Unit"], dependencies=[Depends(get_current_user)])
+app.include_router(disk_group.router, prefix="/api", tags=["Disk Group"], dependencies=[Depends(get_current_user)])
 app.include_router(disk.router, prefix="/api", tags=["Disk"], dependencies=[Depends(get_current_user)])
+app.include_router(nas_server.router, prefix="/api", tags=["NAS Server"], dependencies=[Depends(get_current_user)])
+app.include_router(job.router, prefix="/api", tags=["Job"], dependencies=[Depends(get_current_user)])
 app.include_router(user.router, prefix="/api", tags=["User"], dependencies=[Depends(get_current_user)])
-app.include_router(system_info.router, prefix="/api", tags=["System Information"])
-
+app.include_router(system_info.router, prefix="/api", tags=["System Info"])
+app.include_router(cifs_server.router, prefix="/api", tags=["CIFS Server"], dependencies=[Depends(get_current_user)])
+app.include_router(nfs_share.router, prefix="/api", tags=["NFS Share"], dependencies=[Depends(get_current_user)])
+app.include_router(quota.router, prefix="/api", tags=["Quota Management"], dependencies=[Depends(get_current_user)])
 
 if __name__ == "__main__":
     import uvicorn

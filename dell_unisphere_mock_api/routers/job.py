@@ -4,7 +4,7 @@ from dell_unisphere_mock_api.controllers.job_controller import JobController
 from dell_unisphere_mock_api.core.auth import get_current_user
 from dell_unisphere_mock_api.schemas.job import Job, JobCreate
 
-router = APIRouter(prefix="", tags=["Job"])
+router = APIRouter(prefix="/types/job", tags=["Job"])
 controller = JobController()
 
 
@@ -35,7 +35,7 @@ async def list_jobs(
 ):
     """List all jobs."""
     jobs = await controller.list_jobs()
-    return {"@base": "/api/types/job/instances", "entries": [{"content": job.model_dump()} for job in jobs]}
+    return {"@base": "/types/job/instances", "entries": [{"content": job.model_dump()} for job in jobs]}
 
 
 @router.delete("/instances/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
