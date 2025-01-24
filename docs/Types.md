@@ -42,23 +42,23 @@ Resources for file sharing and protocol management:
   - File sharing server management
   - Protocol and network configuration
 
-- **CIFS Server** (`/api/types/cifsServer/instances`) ❌
+- **CIFS Server** (`/api/types/cifsServer/instances`) ✅
   - Windows file sharing (SMB) configuration
   - Active Directory integration
 
-- **NFS Share** (`/api/types/nfsShare/instances`) ❌
+- **NFS Share** (`/api/types/nfsShare/instances`) ✅
   - Unix/Linux file sharing configuration
   - Export management
 
-- **Quota Configuration** (`/api/types/quotaConfig/instances`) ❌
+- **Quota Configuration** (`/api/types/quotaConfig/instances`) ✅
   - Storage quota settings
   - Usage limits and monitoring
 
-- **Tree Quota** (`/api/types/treeQuota/instances`) ❌
+- **Tree Quota** (`/api/types/treeQuota/instances`) ✅
   - Directory-based quotas
   - Hierarchical storage management
 
-- **User Quota** (`/api/types/userQuota/instances`) ❌
+- **User Quota** (`/api/types/userQuota/instances`) ✅
   - User-based storage limits
   - Resource allocation control
 
@@ -142,11 +142,11 @@ System-wide configuration and monitoring:
 
 User and tenant management:
 
-- **ACL User** (`/api/types/aclUser/instances`) ❌
+- **ACL User** (`/api/types/aclUser/instances`) ✅
   - Access control lists
   - User permissions
 
-- **Tenant** (`/api/types/tenant/instances`) ❌
+- **Tenant** (`/api/types/tenant/instances`) ✅
   - Multi-tenancy support
   - Resource isolation
 

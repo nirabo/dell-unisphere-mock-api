@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_token
 from dell_unisphere_mock_api.middleware.response_headers import ResponseHeaderMiddleware
 from dell_unisphere_mock_api.routers import (
+    acl_user,
     auth,
     cifs_server,
     disk,
@@ -24,6 +25,7 @@ from dell_unisphere_mock_api.routers import (
     session,
     storage_resource,
     system_info,
+    tenant,
     user,
 )
 from dell_unisphere_mock_api.version import get_version
@@ -217,6 +219,8 @@ app.include_router(system_info.router, prefix="/api", tags=["System Info"])
 app.include_router(cifs_server.router, prefix="/api", tags=["CIFS Server"], dependencies=[Depends(get_current_user)])
 app.include_router(nfs_share.router, prefix="/api", tags=["NFS Share"], dependencies=[Depends(get_current_user)])
 app.include_router(quota.router, prefix="/api", tags=["Quota Management"], dependencies=[Depends(get_current_user)])
+app.include_router(acl_user.router, prefix="/api", tags=["ACL User"], dependencies=[Depends(get_current_user)])
+app.include_router(tenant.router, prefix="/api", tags=["Tenant"], dependencies=[Depends(get_current_user)])
 
 if __name__ == "__main__":
     import uvicorn
