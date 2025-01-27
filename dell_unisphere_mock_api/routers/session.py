@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import HTTPBasicCredentials
 from pydantic import BaseModel, Field
 
@@ -20,12 +20,12 @@ session_controller = SessionController()
     responses={200: {"description": "JSON representation of all members of the loginSessionInfo collection"}},
 )
 async def get_all_sessions(
-    response: Response, credentials: HTTPBasicCredentials = Depends(get_current_user)
+    request: Request, response: Response, credentials: HTTPBasicCredentials = Depends(get_current_user)
 ) -> ApiResponse[LoginSessionInfo]:
     """Get all active login sessions"""
     response.headers["Accept"] = "application/json"
     response.headers["Content-Type"] = "application/json"
-    return session_controller.get_all_sessions()
+    return session_controller.get_all_sessions(request)
 
 
 @router.get(
@@ -34,12 +34,12 @@ async def get_all_sessions(
     responses={200: {"description": "JSON representation of a specific loginSessionInfo instance"}},
 )
 async def get_session(
-    session_id: str, response: Response, credentials: HTTPBasicCredentials = Depends(get_current_user)
+    session_id: str, request: Request, response: Response, credentials: HTTPBasicCredentials = Depends(get_current_user)
 ) -> ApiResponse[LoginSessionInfo]:
     """Get details of a specific login session"""
     response.headers["Accept"] = "application/json"
     response.headers["Content-Type"] = "application/json"
-    session = session_controller.get_session(session_id)
+    session = session_controller.get_session(session_id, request)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     return session

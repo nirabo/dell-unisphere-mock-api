@@ -59,6 +59,7 @@ class StorageResourceCreate(StorageResourceBase):
 
 
 class StorageResourceUpdate(BaseModel):
+    name: Optional[str] = None
     description: Optional[str] = None
     isCompressionEnabled: Optional[bool] = None
     isAdvancedDedupEnabled: Optional[bool] = None

@@ -81,7 +81,7 @@ class StorageResourceModel:
         del self.storage_resources[resource_id]
         return True
 
-    def update_host_access(self, resource_id: str, host_id: str, access_type: str) -> bool:
+    def add_host_access(self, resource_id: str, host_id: str, access_type: str) -> bool:
         if resource_id not in self.storage_resources:
             return False
 
@@ -103,6 +103,19 @@ class StorageResourceModel:
         resource = self.storage_resources[resource_id]
         resource["hostAccess"] = [access for access in resource["hostAccess"] if access["host"] != host_id]
         return True
+
+    def update_host_access(self, resource_id: str, host_id: str, access_type: str) -> bool:
+        if resource_id not in self.storage_resources:
+            return False
+
+        resource = self.storage_resources[resource_id]
+        # Check if host already has access
+        for access in resource["hostAccess"]:
+            if access["host"] == host_id:
+                access["accessType"] = access_type
+                return True
+
+        return False
 
     def update_usage_stats(self, resource_id: str, size_used: int, tier_usage: dict) -> bool:
         if resource_id not in self.storage_resources:

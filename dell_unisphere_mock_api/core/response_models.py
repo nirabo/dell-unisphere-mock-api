@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Generic, List, Optional, TypeVar
+from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -16,6 +16,7 @@ class Entry(BaseModel, Generic[T]):
     content: T
     links: List[Link]
     updated: datetime
+    metadata: Optional[Dict[str, Any]] = None
 
     class Config:
         populate_by_name = True
@@ -27,6 +28,22 @@ class ApiResponse(BaseModel, Generic[T]):
     updated: datetime
     links: List[Link]
     entries: List[Entry[T]]
+    total: Optional[int] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+    class Config:
+        populate_by_name = True
+        json_encoders = {datetime: lambda v: v.isoformat()}
+
+
+class ErrorDetail(BaseModel):
+    """Detailed error information following Unity API error format."""
+
+    error_code: int = Field(alias="errorCode")
+    http_status_code: int = Field(alias="httpStatusCode")
+    messages: List[str]
+    created: datetime
+    error_messages: Optional[List[Dict[str, Any]]] = Field(default=None, alias="errorMessages")
 
     class Config:
         populate_by_name = True

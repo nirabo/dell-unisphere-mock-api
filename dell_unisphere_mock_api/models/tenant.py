@@ -16,6 +16,9 @@ class TenantBase(BaseModel):
     name: str = Field(..., description="User-specified name of the tenant")
     uuid: Optional[str] = Field(None, description="UUID of the tenant")
     vlans: List[conint(ge=1, le=4094)] = Field(..., description="VLAN IDs assigned to the tenant")
+    description: Optional[str] = Field(None, description="Description of the tenant")
+    networks: Optional[List[str]] = Field(default=[], description="Networks assigned to the tenant")
+    is_enabled: Optional[bool] = Field(default=True, description="Whether the tenant is enabled")
 
     @validator("vlans")
     def validate_vlans(cls, v):
@@ -35,6 +38,9 @@ class TenantUpdate(BaseModel):
 
     name: Optional[str] = Field(None, description="New tenant name")
     vlans: Optional[List[conint(ge=1, le=4094)]] = Field(None, description="List of VLAN IDs to set")
+    description: Optional[str] = Field(None, description="Description of the tenant")
+    networks: Optional[List[str]] = Field(None, description="Networks assigned to the tenant")
+    is_enabled: Optional[bool] = Field(None, description="Whether the tenant is enabled")
 
     @validator("vlans")
     def validate_vlans(cls, v):

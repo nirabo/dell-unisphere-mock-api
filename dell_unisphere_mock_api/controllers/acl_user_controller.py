@@ -1,6 +1,8 @@
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 from uuid import uuid4
+
+from fastapi import HTTPException, Request
 
 from dell_unisphere_mock_api.core.response_models import ApiResponse, Entry, Link
 from dell_unisphere_mock_api.models.acl_user import ACLUser, ACLUserCreate, ACLUserUpdate
@@ -10,9 +12,9 @@ class ACLUserController:
     def __init__(self):
         self.users: Dict[str, ACLUser] = {}
 
-    def _create_api_response(self, entries: List[Entry], request_path: str) -> ApiResponse:
+    def _create_api_response(self, entries: List[Entry], request: Request) -> ApiResponse:
         """Create standardized API response"""
-        base_url = "https://127.0.0.1:8000"
+        base_url = str(request.base_url).rstrip("/")
         return ApiResponse(
             **{
                 "@base": f"{base_url}/api/types/aclUser/instances",
@@ -22,8 +24,9 @@ class ACLUserController:
             }
         )
 
-    def _create_entry(self, user: ACLUser, base_url: str) -> Entry:
+    def _create_entry(self, user: ACLUser, request: Request) -> Entry:
         """Create standardized entry"""
+        base_url = str(request.base_url).rstrip("/")
         return Entry(
             **{
                 "@base": "storageObject",
@@ -33,42 +36,49 @@ class ACLUserController:
             }
         )
 
-    def create_user(self, user: ACLUserCreate) -> ACLUser:
+    async def create_user(self, request: Request, user: ACLUserCreate) -> ApiResponse:
         """Create a new ACL user"""
-        user_id = str(uuid4())
-        new_user = ACLUser(**{**user.dict(), "id": user_id})
-        self.users[user_id] = new_user
-        return new_user
+        try:
+            user_id = str(uuid4())
+            new_user = ACLUser(**{**user.model_dump(), "id": user_id})
+            self.users[user_id] = new_user
+            return self._create_api_response([self._create_entry(new_user, request)], request)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
-    def get_user(self, user_id: str) -> Optional[ACLUser]:
+    async def get_user(self, request: Request, user_id: str) -> ApiResponse:
         """Get an ACL user by ID"""
-        return self.users.get(user_id)
+        user = self.users.get(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="ACL user not found")
+        return self._create_api_response([self._create_entry(user, request)], request)
 
-    def list_users(self) -> List[ACLUser]:
+    async def list_users(self, request: Request) -> ApiResponse:
         """List all ACL users"""
-        return list(self.users.values())
+        entries = [self._create_entry(user, request) for user in self.users.values()]
+        return self._create_api_response(entries, request)
 
-    def update_user(self, user_id: str, update_data: ACLUserUpdate) -> Optional[ACLUser]:
+    async def update_user(self, request: Request, user_id: str, update_data: ACLUserUpdate) -> ApiResponse:
         """Update an ACL user"""
         if user_id not in self.users:
-            return None
+            raise HTTPException(status_code=404, detail="ACL user not found")
 
         user = self.users[user_id]
-        update_dict = update_data.dict(exclude_unset=True)
-        updated_user = ACLUser(**{**user.dict(), **update_dict})
+        update_dict = update_data.model_dump(exclude_unset=True)
+        updated_user = ACLUser(**{**user.model_dump(), **update_dict})
         self.users[user_id] = updated_user
-        return updated_user
+        return self._create_api_response([self._create_entry(updated_user, request)], request)
 
-    def delete_user(self, user_id: str) -> bool:
+    async def delete_user(self, request: Request, user_id: str) -> ApiResponse:
         """Delete an ACL user"""
         if user_id not in self.users:
-            return False
+            raise HTTPException(status_code=404, detail="ACL user not found")
         del self.users[user_id]
-        return True
+        return self._create_api_response([], request)
 
-    def lookup_sid_by_domain_user(self, domain_name: str, user_name: str) -> Optional[Tuple[str, ACLUser]]:
+    async def lookup_sid_by_domain_user(self, request: Request, domain_name: str, user_name: str) -> ApiResponse:
         """Look up a user's SID by domain name and username"""
         for user in self.users.values():
             if user.domain_name.lower() == domain_name.lower() and user.user_name.lower() == user_name.lower():
-                return user.sid, user
-        return None
+                return self._create_api_response([self._create_entry(user, request)], request)
+        raise HTTPException(status_code=404, detail="ACL user not found")

@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_token
 from dell_unisphere_mock_api.middleware.response_headers import ResponseHeaderMiddleware
+from dell_unisphere_mock_api.middleware.response_wrapper import ResponseWrapperMiddleware
 from dell_unisphere_mock_api.routers import (
     acl_user,
     auth,
@@ -185,6 +186,9 @@ app.add_middleware(
 
 # Add response headers middleware
 app.add_middleware(ResponseHeaderMiddleware)
+
+# Add response wrapper middleware
+app.add_middleware(ResponseWrapperMiddleware)
 
 
 # Middleware to verify CSRF token for POST, PATCH and DELETE requests

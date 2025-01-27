@@ -64,6 +64,7 @@ class LUNUpdate(BaseModel):
     tieringPolicy: Optional[TieringPolicyEnum] = Field(None, description="New tiering policy")
     isCompressionEnabled: Optional[bool] = Field(None, description="Enable/disable compression")
     isDataReductionEnabled: Optional[bool] = Field(None, description="Enable/disable data reduction")
+    isThinEnabled: Optional[bool] = Field(None, description="Enable/disable thin provisioning")
     hostAccess: Optional[List[HostAccessEnum]] = Field(None, description="New host access list")
 
 

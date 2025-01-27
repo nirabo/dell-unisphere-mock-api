@@ -32,7 +32,9 @@ async def get_tenant(
 ):
     tenant = controller.get_tenant(tenant_id)
     if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        error_response = controller._create_api_response([], f"/types/tenant/instances/{tenant_id}")
+        error_response["error"] = {"messages": ["Tenant not found"], "httpStatusCode": 404}
+        raise HTTPException(status_code=404, detail=error_response)
     entry = controller._create_entry(tenant, "https://127.0.0.1:8000")
     return controller._create_api_response([entry], f"/types/tenant/instances/{tenant_id}")
 
@@ -44,7 +46,9 @@ async def get_tenant_by_name(
 ):
     tenant = controller.get_tenant_by_name(tenant_name)
     if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        error_response = controller._create_api_response([], f"/types/tenant/instances/name:{tenant_name}")
+        error_response["error"] = {"messages": ["Tenant not found"], "httpStatusCode": 404}
+        raise HTTPException(status_code=404, detail=error_response)
     entry = controller._create_entry(tenant, "https://127.0.0.1:8000")
     return controller._create_api_response([entry], f"/types/tenant/instances/name:{tenant_name}")
 
@@ -57,7 +61,9 @@ async def modify_tenant(
 ):
     updated_tenant = controller.update_tenant(tenant_id, update_data)
     if not updated_tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        error_response = controller._create_api_response([], f"/types/tenant/instances/{tenant_id}/action/modify")
+        error_response["error"] = {"messages": ["Tenant not found"], "httpStatusCode": 404}
+        raise HTTPException(status_code=404, detail=error_response)
     return None
 
 
@@ -69,10 +75,18 @@ async def modify_tenant_by_name(
 ):
     tenant = controller.get_tenant_by_name(tenant_name)
     if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        error_response = controller._create_api_response(
+            [], f"/types/tenant/instances/name:{tenant_name}/action/modify"
+        )
+        error_response["error"] = {"messages": ["Tenant not found"], "httpStatusCode": 404}
+        raise HTTPException(status_code=404, detail=error_response)
     updated_tenant = controller.update_tenant(tenant.id, update_data)
     if not updated_tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        error_response = controller._create_api_response(
+            [], f"/types/tenant/instances/name:{tenant_name}/action/modify"
+        )
+        error_response["error"] = {"messages": ["Failed to update tenant"], "httpStatusCode": 404}
+        raise HTTPException(status_code=404, detail=error_response)
     return None
 
 
@@ -83,7 +97,9 @@ async def delete_tenant(
 ):
     success = controller.delete_tenant(tenant_id)
     if not success:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        error_response = controller._create_api_response([], f"/types/tenant/instances/{tenant_id}")
+        error_response["error"] = {"messages": ["Tenant not found"], "httpStatusCode": 404}
+        raise HTTPException(status_code=404, detail=error_response)
     return controller._create_api_response([], f"/types/tenant/instances/{tenant_id}")
 
 
@@ -94,8 +110,12 @@ async def delete_tenant_by_name(
 ):
     tenant = controller.get_tenant_by_name(tenant_name)
     if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        error_response = controller._create_api_response([], f"/types/tenant/instances/name:{tenant_name}")
+        error_response["error"] = {"messages": ["Tenant not found"], "httpStatusCode": 404}
+        raise HTTPException(status_code=404, detail=error_response)
     success = controller.delete_tenant(tenant.id)
     if not success:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        error_response = controller._create_api_response([], f"/types/tenant/instances/name:{tenant_name}")
+        error_response["error"] = {"messages": ["Failed to delete tenant"], "httpStatusCode": 404}
+        raise HTTPException(status_code=404, detail=error_response)
     return controller._create_api_response([], f"/types/tenant/instances/name:{tenant_name}")

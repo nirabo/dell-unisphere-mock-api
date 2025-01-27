@@ -1,8 +1,8 @@
-from typing import List, Optional
-
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 
 from dell_unisphere_mock_api.controllers.pool_controller import PoolController
+from dell_unisphere_mock_api.core.response import UnityResponseFormatter
+from dell_unisphere_mock_api.core.response_models import ApiResponse
 from dell_unisphere_mock_api.models.lun import LUNModel
 from dell_unisphere_mock_api.schemas.lun import LUN, LUNCreate, LUNUpdate
 
@@ -12,17 +12,18 @@ class LUNController:
         self.lun_model = LUNModel()
         self.pool_controller = PoolController()
 
-    def create_lun(self, lun_create: LUNCreate) -> LUN:
+    def create_lun(self, lun_create: LUNCreate, request: Request) -> ApiResponse[LUN]:
         """Create a new LUN."""
         print(f"LUN controller: Creating LUN with pool_id: {lun_create.pool_id}")
         # Validate pool exists and has enough space
         print(f"LUN controller: Looking for pool with ID: {lun_create.pool_id}")
-        pool = self.pool_controller.get_pool(str(lun_create.pool_id))
-        print(f"LUN controller: Found pool: {pool}")
-        if not pool:
+        pool_response = self.pool_controller.get_pool(str(lun_create.pool_id), request)
+        print(f"LUN controller: Found pool: {pool_response}")
+        if not pool_response.entries:
             print(f"LUN controller: Pool not found with ID: {lun_create.pool_id}")
             raise HTTPException(status_code=404, detail=f"Pool not found with ID: {lun_create.pool_id}")
 
+        pool = pool_response.entries[0].content
         if pool.sizeFree < lun_create.size:
             print(
                 f"LUN controller: Pool {pool.id} does not have enough free space. "
@@ -41,9 +42,11 @@ class LUNController:
         print(f"LUN controller: Creating LUN with data: {lun_create.model_dump()}")
         result = self.lun_model.create_lun(lun_create)
         print(f"LUN controller: Created LUN: {result}")
-        return result
 
-    def get_lun(self, lun_id: str) -> Optional[LUN]:
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection([result], entry_links={0: [{"rel": "self", "href": f"/{result.id}"}]})
+
+    def get_lun(self, lun_id: str, request: Request) -> ApiResponse[LUN]:
         """Get a LUN by ID."""
         print(f"LUN controller: Looking for LUN with ID: {lun_id}")
         lun = self.lun_model.get_lun(lun_id)
@@ -51,9 +54,11 @@ class LUNController:
             print(f"LUN controller: LUN not found with ID: {lun_id}")
             raise HTTPException(status_code=404, detail=f"LUN with ID '{lun_id}' not found")
         print(f"LUN controller: Found LUN: {lun}")
-        return lun
 
-    def get_lun_by_name(self, name: str) -> Optional[LUN]:
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection([lun], entry_links={0: [{"rel": "self", "href": f"/{lun_id}"}]})
+
+    def get_lun_by_name(self, name: str, request: Request) -> ApiResponse[LUN]:
         """Get a LUN by name."""
         print(f"LUN controller: Looking for LUN with name: {name}")
         lun = self.lun_model.get_lun_by_name(name)
@@ -61,23 +66,31 @@ class LUNController:
             print(f"LUN controller: LUN not found with name: {name}")
             raise HTTPException(status_code=404, detail=f"LUN with name '{name}' not found")
         print(f"LUN controller: Found LUN: {lun}")
-        return lun
 
-    def list_luns(self) -> List[LUN]:
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection([lun], entry_links={0: [{"rel": "self", "href": f"/{lun.id}"}]})
+
+    def list_luns(self, request: Request) -> ApiResponse[LUN]:
         """List all LUNs."""
         print("LUN controller: Listing all LUNs")
-        result = self.lun_model.list_luns()
-        print(f"LUN controller: Listed LUNs: {result}")
-        return result
+        luns = self.lun_model.list_luns()
+        print(f"LUN controller: Listed LUNs: {luns}")
 
-    def get_luns_by_pool(self, pool_id: str) -> List[LUN]:
+        formatter = UnityResponseFormatter(request)
+        entry_links = {i: [{"rel": "self", "href": f"/{lun.id}"}] for i, lun in enumerate(luns)}
+        return formatter.format_collection(luns, entry_links=entry_links)
+
+    def get_luns_by_pool(self, pool_id: str, request: Request) -> ApiResponse[LUN]:
         """Get all LUNs in a pool."""
         print(f"LUN controller: Getting LUNs in pool with ID: {pool_id}")
-        result = self.lun_model.get_luns_by_pool(pool_id)
-        print(f"LUN controller: Got LUNs in pool: {result}")
-        return result
+        luns = self.lun_model.get_luns_by_pool(pool_id)
+        print(f"LUN controller: Got LUNs in pool: {luns}")
 
-    def update_lun(self, lun_id: str, lun_update: LUNUpdate) -> Optional[LUN]:
+        formatter = UnityResponseFormatter(request)
+        entry_links = {i: [{"rel": "self", "href": f"/{lun.id}"}] for i, lun in enumerate(luns)}
+        return formatter.format_collection(luns, entry_links=entry_links)
+
+    def update_lun(self, lun_id: str, lun_update: LUNUpdate, request: Request) -> ApiResponse[LUN]:
         """Update a LUN."""
         print(f"LUN controller: Updating LUN with ID: {lun_id}")
         # Get existing LUN
@@ -97,13 +110,17 @@ class LUNController:
         print(f"LUN controller: Updating LUN with data: {lun_update.model_dump()}")
         result = self.lun_model.update_lun(lun_id, lun_update)
         print(f"LUN controller: Updated LUN: {result}")
-        return result
 
-    def delete_lun(self, lun_id: str) -> bool:
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection([result], entry_links={0: [{"rel": "self", "href": f"/{lun_id}"}]})
+
+    def delete_lun(self, lun_id: str, request: Request) -> ApiResponse[None]:
         """Delete a LUN."""
         print(f"LUN controller: Deleting LUN with ID: {lun_id}")
         if not self.lun_model.delete_lun(lun_id):
             print(f"LUN controller: LUN not found with ID: {lun_id}")
             raise HTTPException(status_code=404, detail=f"LUN with ID '{lun_id}' not found")
         print(f"LUN controller: Deleted LUN with ID: {lun_id}")
-        return True
+
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection([], entry_links={})
