@@ -1,10 +1,26 @@
+import pytest
+from fastapi import Request
 from fastapi.testclient import TestClient
 
 from dell_unisphere_mock_api.controllers.acl_user_controller import ACLUserController
 from dell_unisphere_mock_api.models.acl_user import ACLUserCreate, ACLUserUpdate
 
 
-def test_acl_user_controller_create():
+@pytest.fixture
+def mock_request():
+    """Create a mock request object."""
+    scope = {
+        "type": "http",
+        "headers": [],
+        "method": "GET",
+        "scheme": "http",
+        "server": ("testserver", 80),
+        "path": "/api/types/aclUser/instances",
+    }
+    return Request(scope=scope)
+
+
+def test_acl_user_controller_create(mock_request):
     """Test creating an ACL user."""
     controller = ACLUserController()
     user_data = ACLUserCreate(
@@ -13,13 +29,14 @@ def test_acl_user_controller_create():
         user_name="testuser",
     )
 
-    user = controller.create_user(user_data)
-    assert user.sid == "S-1-5-21-1234567890-1234567890-1234567890-1234"
-    assert user.domain_name == "WORKGROUP"
-    assert user.user_name == "testuser"
+    response = controller.create_user(mock_request, user_data)
+    content = response.entries[0].content
+    assert content.sid == "S-1-5-21-1234567890-1234567890-1234567890-1234"
+    assert content.domain_name == "WORKGROUP"
+    assert content.user_name == "testuser"
 
 
-def test_acl_user_controller_get():
+def test_acl_user_controller_get(mock_request):
     """Test retrieving an ACL user."""
     controller = ACLUserController()
     user_data = ACLUserCreate(
@@ -28,8 +45,10 @@ def test_acl_user_controller_get():
         user_name="testuser",
     )
 
-    created_user = controller.create_user(user_data)
-    retrieved_user = controller.get_user(created_user.id)
+    created_response = controller.create_user(mock_request, user_data)
+    created_user = created_response.entries[0].content
+    retrieved_response = controller.get_user(mock_request, created_user.id)
+    retrieved_user = retrieved_response.entries[0].content
 
     assert retrieved_user is not None
     assert retrieved_user.id == created_user.id
@@ -38,7 +57,7 @@ def test_acl_user_controller_get():
     assert retrieved_user.user_name == "testuser"
 
 
-def test_acl_user_controller_update():
+def test_acl_user_controller_update(mock_request):
     """Test updating an ACL user."""
     controller = ACLUserController()
     user_data = ACLUserCreate(
@@ -47,9 +66,11 @@ def test_acl_user_controller_update():
         user_name="testuser",
     )
 
-    created_user = controller.create_user(user_data)
+    created_response = controller.create_user(mock_request, user_data)
+    created_user = created_response.entries[0].content
     update_data = ACLUserUpdate(user_name="updateduser")
-    updated_user = controller.update_user(created_user.id, update_data)
+    updated_response = controller.update_user(mock_request, created_user.id, update_data)
+    updated_user = updated_response.entries[0].content
 
     assert updated_user is not None
     assert updated_user.user_name == "updateduser"
@@ -57,7 +78,7 @@ def test_acl_user_controller_update():
     assert updated_user.domain_name == "WORKGROUP"
 
 
-def test_acl_user_controller_lookup_sid():
+def test_acl_user_controller_lookup_sid(mock_request):
     """Test looking up a user's SID by domain name and username."""
     controller = ACLUserController()
     user_data = ACLUserCreate(
@@ -66,12 +87,12 @@ def test_acl_user_controller_lookup_sid():
         user_name="testuser",
     )
 
-    controller.create_user(user_data)
-    result = controller.lookup_sid_by_domain_user("WORKGROUP", "testuser")
+    controller.create_user(mock_request, user_data)
+    result = controller.lookup_sid_by_domain_user(mock_request, "WORKGROUP", "testuser")
+    user = result.entries[0].content
 
     assert result is not None
-    sid, user = result
-    assert sid == "S-1-5-21-1234567890-1234567890-1234567890-1234"
+    assert user.sid == "S-1-5-21-1234567890-1234567890-1234567890-1234"
     assert user.domain_name == "WORKGROUP"
     assert user.user_name == "testuser"
 

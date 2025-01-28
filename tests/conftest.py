@@ -63,12 +63,36 @@ def test_client():
 
 @pytest.fixture
 def auth_headers(test_client):
-    """Create headers with authentication and CSRF token for test requests."""
+    """Create headers with authentication for test requests.
+
+    This follows the Dell Unity API behavior:
+    1. Uses HTTP Basic auth
+    2. Requires X-EMC-REST-CLIENT header
+    3. For GET requests, returns EMC-CSRF-TOKEN in response header
+    4. For POST/PATCH/DELETE requests, requires EMC-CSRF-TOKEN header
+
+    Returns:
+        tuple: (headers_with_csrf, headers_without_csrf)
+        - headers_with_csrf: Headers for POST/PATCH/DELETE requests
+        - headers_without_csrf: Headers for GET requests
+    """
     # Create Basic Auth header with correct password
     credentials = base64.b64encode(b"admin:Password123!").decode("utf-8")
-    headers = {
+
+    # Base headers used for all requests
+    base_headers = {
         "Authorization": f"Basic {credentials}",
-        "X-EMC-REST-CLIENT": "true",  # Make sure this matches case exactly
-        "EMC-CSRF-TOKEN": "test-csrf-token",
+        "X-EMC-REST-CLIENT": "true",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
     }
-    return headers, {}  # Return headers and empty cookies dict
+
+    # Make a GET request to get CSRF token
+    response = test_client.get("/api/types/user/instances", headers=base_headers)
+    csrf_token = response.headers.get("EMC-CSRF-TOKEN")
+
+    # Create headers with CSRF token for mutating requests
+    headers_with_csrf = base_headers.copy()
+    headers_with_csrf["EMC-CSRF-TOKEN"] = csrf_token
+
+    return headers_with_csrf, base_headers

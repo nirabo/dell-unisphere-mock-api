@@ -36,6 +36,11 @@ def sample_nfs_share_data():
         "anonymous_uid": 65534,
         "anonymous_gid": 65534,
         "is_read_only": True,
+        "min_security": "SYS",
+        "no_access_hosts": [],
+        "read_only_hosts": [],
+        "read_write_hosts": [],
+        "root_access_hosts": [],
     }
 
 
@@ -43,7 +48,7 @@ def sample_nfs_share_data():
 async def test_create_nfs_share(nfs_share_controller, mock_request, sample_nfs_share_data):
     """Test creating an NFS share."""
     share_data = NFSShareCreate(**sample_nfs_share_data)
-    response = await nfs_share_controller.create_nfs_share(mock_request, share_data)
+    response = nfs_share_controller.create_nfs_share(mock_request, share_data)
     response_dict = response.model_dump()
 
     assert len(response_dict["entries"]) == 1
@@ -60,12 +65,12 @@ async def test_get_nfs_share(nfs_share_controller, mock_request, sample_nfs_shar
     """Test retrieving an NFS share."""
     # Create a share first
     share_data = NFSShareCreate(**sample_nfs_share_data)
-    created_response = await nfs_share_controller.create_nfs_share(mock_request, share_data)
+    created_response = nfs_share_controller.create_nfs_share(mock_request, share_data)
     created_dict = created_response.model_dump()
     created_id = created_dict["entries"][0]["content"]["id"]
 
     # Get the share
-    response = await nfs_share_controller.get_nfs_share(mock_request, created_id)
+    response = nfs_share_controller.get_nfs_share(mock_request, created_id)
     response_dict = response.model_dump()
 
     assert len(response_dict["entries"]) == 1
@@ -79,13 +84,13 @@ async def test_list_nfs_shares(nfs_share_controller, mock_request, sample_nfs_sh
     """Test listing NFS shares."""
     # Create a share first
     share_data = NFSShareCreate(**sample_nfs_share_data)
-    created_response = await nfs_share_controller.create_nfs_share(mock_request, share_data)
+    created_response = nfs_share_controller.create_nfs_share(mock_request, share_data)
     created_dict = created_response.model_dump()
     created_id = created_dict["entries"][0]["content"]["id"]
     created_name = created_dict["entries"][0]["content"]["name"]
 
     # List all shares
-    response = await nfs_share_controller.list_nfs_shares(mock_request)
+    response = nfs_share_controller.list_nfs_shares(mock_request)
     response_dict = response.model_dump()
 
     assert len(response_dict["entries"]) == 1
@@ -99,13 +104,13 @@ async def test_update_nfs_share(nfs_share_controller, mock_request, sample_nfs_s
     """Test updating an NFS share."""
     # Create a share first
     share_data = NFSShareCreate(**sample_nfs_share_data)
-    created_response = await nfs_share_controller.create_nfs_share(mock_request, share_data)
+    created_response = nfs_share_controller.create_nfs_share(mock_request, share_data)
     created_dict = created_response.model_dump()
     created_id = created_dict["entries"][0]["content"]["id"]
 
     # Update the share
     update_data = NFSShareUpdate(description="Updated description", is_read_only=False)
-    response = await nfs_share_controller.update_nfs_share(mock_request, created_id, update_data)
+    response = nfs_share_controller.update_nfs_share(mock_request, created_id, update_data)
     response_dict = response.model_dump()
 
     assert len(response_dict["entries"]) == 1
@@ -123,19 +128,15 @@ async def test_delete_nfs_share(nfs_share_controller, mock_request, sample_nfs_s
     """Test deleting an NFS share."""
     # Create a share first
     share_data = NFSShareCreate(**sample_nfs_share_data)
-    created_response = await nfs_share_controller.create_nfs_share(mock_request, share_data)
+    created_response = nfs_share_controller.create_nfs_share(mock_request, share_data)
     created_dict = created_response.model_dump()
     created_id = created_dict["entries"][0]["content"]["id"]
 
     # Delete the share
-    response = await nfs_share_controller.delete_nfs_share(mock_request, created_id)
-    response_dict = response.model_dump()
-
-    assert len(response_dict["entries"]) == 1
-    content = response_dict["entries"][0]["content"]
-    assert content["id"] == created_id
+    response = nfs_share_controller.delete_nfs_share(mock_request, created_id)
+    assert response is True
 
     # Verify it's deleted by trying to get it
     with pytest.raises(HTTPException) as exc_info:
-        await nfs_share_controller.get_nfs_share(mock_request, created_id)
+        nfs_share_controller.get_nfs_share(mock_request, created_id)
     assert exc_info.value.status_code == 404

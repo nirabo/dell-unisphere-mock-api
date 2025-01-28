@@ -67,16 +67,22 @@ def test_format_collection_with_pagination(mock_request):
 
     assert response.base == "http://testserver/test"
     assert len(response.entries) == 3
-    assert len(response.links) == 2  # prev and next links
+    assert len(response.links) == 4  # first, prev, next, and last links
 
     # Verify pagination links
+    first_link = next((link for link in response.links if link.rel == "first"), None)
     prev_link = next((link for link in response.links if link.rel == "previous"), None)
     next_link = next((link for link in response.links if link.rel == "next"), None)
+    last_link = next((link for link in response.links if link.rel == "last"), None)
 
+    assert first_link is not None
     assert prev_link is not None
     assert next_link is not None
+    assert last_link is not None
+    assert first_link.href == "http://testserver/test?page=1"
     assert prev_link.href == "http://testserver/test?page=1"
     assert next_link.href == "http://testserver/test?page=3"
+    assert last_link.href == "http://testserver/test?page=3"
 
 
 def test_format_error_http_exception(mock_request):

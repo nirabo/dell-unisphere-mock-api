@@ -29,7 +29,7 @@ def test_format_collection_matches_api_response_model(test_client: TestClient):
 
     # Validate using ApiResponse model
     try:
-        api_response = ApiResponse[dict].parse_obj(formatted_response)
+        api_response = ApiResponse[dict].model_validate(formatted_response)
         assert api_response.base == "http://testserver/api/types/test"
         assert len(api_response.entries) == 2
         assert isinstance(api_response.updated, datetime)
@@ -65,15 +65,15 @@ def test_pagination_links(test_client: TestClient):
 
     # Check pagination links
     link_rels = {link.rel: link.href for link in api_response.links}
-    assert "prev" in link_rels
+    assert "previous" in link_rels
     assert "next" in link_rels
     assert "first" in link_rels
     assert "last" in link_rels
 
-    assert link_rels["prev"] == "?page=1"
-    assert link_rels["next"] == "?page=3"
-    assert link_rels["first"] == "?page=1"
-    assert link_rels["last"] == "?page=3"
+    assert link_rels["previous"] == "http://testserver/api/types/test?page=1"
+    assert link_rels["next"] == "http://testserver/api/types/test?page=3"
+    assert link_rels["first"] == "http://testserver/api/types/test?page=1"
+    assert link_rels["last"] == "http://testserver/api/types/test?page=3"
 
     # Check total
-    assert formatted_response["total"] == 15
+    assert api_response.total == 15

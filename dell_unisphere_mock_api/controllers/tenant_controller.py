@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 from uuid import uuid4
 
@@ -19,7 +19,7 @@ class TenantController:
         return ApiResponse(
             **{
                 "@base": f"{base_url}/api/types/tenant/instances",
-                "updated": datetime.utcnow(),
+                "updated": datetime.now(timezone.utc),
                 "links": [Link(rel="self", href=f"{base_url}/api/types/tenant/instances")],
                 "entries": entries,
             }

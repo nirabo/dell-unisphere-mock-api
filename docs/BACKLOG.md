@@ -28,15 +28,15 @@ This backlog tracks the implementation of the generic response wrapper defined i
 
 ### Access Control
 - [x] Update `acl_user_controller.py` responses and tests
-- [ ] Update `tenant_controller.py` responses and tests
+- [x] Update `tenant_controller.py` responses and tests
 
 ### Resource Management
-- [ ] Update `quota_controller.py` responses and tests
-- [ ] Update `job_controller.py` responses and tests
+- [x] Update `quota_controller.py` responses and tests
+- [x] Update `job_controller.py` responses and tests
 
 ## Router Updates
 
-- [ ] Update `routers/auth.py` responses and tests
+- [x] Update `routers/auth.py` responses and tests
 - [ ] Update `routers/acl_user.py` responses and tests
 - [ ] Update `routers/cifs_server.py` responses and tests
 - [ ] Update all remaining router files

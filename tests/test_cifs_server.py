@@ -1,13 +1,25 @@
 """Tests for CIFS Server functionality."""
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from dell_unisphere_mock_api.controllers.cifs_server_controller import CIFSServerController
 from dell_unisphere_mock_api.models.cifs_server import CIFSServerCreate, CIFSServerUpdate
 
 
-def test_cifs_server_controller_create():
+@pytest.fixture
+def mock_request():
+    class MockRequest:
+        def __init__(self):
+            self.base_url = "http://testserver"
+            self.path = "/test"
+            self.url = type("URL", (), {"path": "/test"})()
+
+    return MockRequest()
+
+
+def test_cifs_server_controller_create(mock_request):
     """Test creating a CIFS server."""
     controller = CIFSServerController()
     server_data = CIFSServerCreate(
@@ -18,7 +30,8 @@ def test_cifs_server_controller_create():
         workgroup="WORKGROUP",
     )
 
-    server = controller.create_cifs_server(server_data)
+    response = controller.create_cifs_server(mock_request, server_data)
+    server = response.entries[0].content
     assert server.name == "TestServer"
     assert server.nas_server_id == "nas_1"
     assert server.netbios_name == "TESTSERVER"
@@ -27,7 +40,7 @@ def test_cifs_server_controller_create():
     assert server.state == "READY"
 
 
-def test_cifs_server_controller_get():
+def test_cifs_server_controller_get(mock_request):
     """Test retrieving a CIFS server."""
     controller = CIFSServerController()
     server_data = CIFSServerCreate(
@@ -38,15 +51,17 @@ def test_cifs_server_controller_get():
         workgroup="WORKGROUP",
     )
 
-    created_server = controller.create_cifs_server(server_data)
-    retrieved_server = controller.get_cifs_server(created_server.id)
+    created_response = controller.create_cifs_server(mock_request, server_data)
+    created_server = created_response.entries[0].content
+    retrieved_response = controller.get_cifs_server(mock_request, created_server.id)
+    retrieved_server = retrieved_response.entries[0].content
 
     assert retrieved_server is not None
     assert retrieved_server.id == created_server.id
     assert retrieved_server.name == "TestServer"
 
 
-def test_cifs_server_controller_update():
+def test_cifs_server_controller_update(mock_request):
     """Test updating a CIFS server."""
     controller = CIFSServerController()
     server_data = CIFSServerCreate(
@@ -57,16 +72,18 @@ def test_cifs_server_controller_update():
         workgroup="WORKGROUP",
     )
 
-    created_server = controller.create_cifs_server(server_data)
+    created_response = controller.create_cifs_server(mock_request, server_data)
+    created_server = created_response.entries[0].content
     update_data = CIFSServerUpdate(description="Updated description", workgroup="NEWWORKGROUP")
-    updated_server = controller.update_cifs_server(created_server.id, update_data)
+    updated_response = controller.update_cifs_server(mock_request, created_server.id, update_data)
+    updated_server = updated_response.entries[0].content
 
     assert updated_server is not None
     assert updated_server.description == "Updated description"
     assert updated_server.workgroup == "NEWWORKGROUP"
 
 
-def test_cifs_server_controller_delete():
+def test_cifs_server_controller_delete(mock_request):
     """Test deleting a CIFS server."""
     controller = CIFSServerController()
     server_data = CIFSServerCreate(
@@ -77,9 +94,14 @@ def test_cifs_server_controller_delete():
         workgroup="WORKGROUP",
     )
 
-    created_server = controller.create_cifs_server(server_data)
-    assert controller.delete_cifs_server(created_server.id) is True
-    assert controller.get_cifs_server(created_server.id) is None
+    created_response = controller.create_cifs_server(mock_request, server_data)
+    created_server = created_response.entries[0].content
+    delete_response = controller.delete_cifs_server(mock_request, created_server.id)
+    assert delete_response.entries == []
+
+    with pytest.raises(HTTPException) as exc_info:
+        controller.get_cifs_server(mock_request, created_server.id)
+    assert exc_info.value.status_code == 404
 
 
 def test_cifs_server_api_endpoints(test_client: TestClient, auth_headers):

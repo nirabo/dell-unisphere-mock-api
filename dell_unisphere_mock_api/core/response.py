@@ -93,11 +93,19 @@ class UnityResponseFormatter(Generic[T]):
         current_page = pagination["page"]
         total_pages = pagination["total_pages"]
 
+        # First page link
+        links.append(Link(rel="first", href=f"{self.base_url}{self.path}?page=1"))
+
+        # Previous page link
         if current_page > 1:
             links.append(Link(rel="previous", href=f"{self.base_url}{self.path}?page={current_page - 1}"))
 
+        # Next page link
         if current_page < total_pages:
             links.append(Link(rel="next", href=f"{self.base_url}{self.path}?page={current_page + 1}"))
+
+        # Last page link
+        links.append(Link(rel="last", href=f"{self.base_url}{self.path}?page={total_pages}"))
 
         return links
 

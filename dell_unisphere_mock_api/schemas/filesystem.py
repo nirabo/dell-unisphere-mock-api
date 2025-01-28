@@ -40,6 +40,7 @@ class FilesystemBase(BaseModel):
     isCacheEnabled: bool = Field(True, description="Indicates if caching is enabled")
     isCompressionEnabled: bool = Field(False, description="Indicates if compression is enabled")
     isAdvancedDedupEnabled: bool = Field(False, description="Indicates if advanced deduplication is enabled")
+    isDataReductionEnabled: bool = Field(False, description="Indicates if data reduction is enabled")
 
 
 class FilesystemCreate(FilesystemBase):
@@ -53,6 +54,7 @@ class FilesystemUpdate(BaseModel):
     isCacheEnabled: Optional[bool] = None
     isCompressionEnabled: Optional[bool] = None
     isAdvancedDedupEnabled: Optional[bool] = None
+    isDataReductionEnabled: Optional[bool] = None
 
 
 class FilesystemResponse(FilesystemBase):

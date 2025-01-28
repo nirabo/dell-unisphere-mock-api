@@ -1,80 +1,77 @@
-from datetime import datetime
-from typing import Dict, List
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
 
-from dell_unisphere_mock_api.core.response_models import ApiResponse, Entry, Link
+from dell_unisphere_mock_api.core.response import UnityResponseFormatter
+from dell_unisphere_mock_api.core.response_models import ApiResponse
 from dell_unisphere_mock_api.models.cifs_server import CIFSServer, CIFSServerCreate, CIFSServerUpdate
 
 
 class CIFSServerController:
+    """Controller for managing CIFS servers."""
+
     def __init__(self):
-        self.cifs_servers: Dict[str, CIFSServer] = {}
+        self.servers: dict[str, CIFSServer] = {}
 
-    def _create_api_response(self, entries: List[Entry], request: Request) -> ApiResponse:
-        """Create standardized API response"""
-        base_url = str(request.base_url).rstrip("/")
-        return ApiResponse(
-            **{
-                "@base": f"{base_url}/api/types/cifsServer/instances",
-                "updated": datetime.utcnow(),
-                "links": [Link(rel="self", href=f"{base_url}/api/types/cifsServer/instances")],
-                "entries": entries,
-            }
+    def create_cifs_server(self, request: Request, server_data: CIFSServerCreate) -> ApiResponse[CIFSServer]:
+        """Create a new CIFS server."""
+        server_id = str(uuid4())
+        server = CIFSServer(
+            id=server_id,
+            name=server_data.name,
+            description=server_data.description,
+            domain_name=server_data.domain_name,
+            netbios_name=server_data.netbios_name,
+            workgroup=server_data.workgroup,
+            is_standalone=server_data.is_standalone,
+            nas_server_id=server_data.nas_server_id,
         )
 
-    def _create_entry(self, cifs_server: CIFSServer, request: Request) -> Entry:
-        """Create standardized entry"""
-        base_url = str(request.base_url).rstrip("/")
-        return Entry(
-            **{
-                "@base": "storageObject",
-                "content": cifs_server,
-                "updated": datetime.utcnow(),
-                "links": [
-                    Link(rel="self", href=f"{base_url}/api/instances/cifsServer/{cifs_server.id}"),
-                    Link(rel="nasServer", href=f"{base_url}/api/instances/nasServer/{cifs_server.nas_server_id}"),
-                ],
-            }
-        )
+        self.servers[server_id] = server
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection([server], entry_links={0: [{"rel": "self", "href": f"/{server_id}"}]})
 
-    async def create_cifs_server(self, request: Request, cifs_server: CIFSServerCreate) -> ApiResponse:
-        """Create a new CIFS server"""
-        try:
-            server_id = str(uuid4())
-            new_server = CIFSServer(**{**cifs_server.model_dump(), "id": server_id})
-            self.cifs_servers[server_id] = new_server
-            return self._create_api_response([self._create_entry(new_server, request)], request)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
-
-    async def get_cifs_server(self, request: Request, server_id: str) -> ApiResponse:
-        """Get a CIFS server by ID"""
-        server = self.cifs_servers.get(server_id)
+    def get_cifs_server(self, request: Request, server_id: str) -> ApiResponse[CIFSServer]:
+        """Get a CIFS server by ID."""
+        server = self.servers.get(server_id)
         if not server:
-            raise HTTPException(status_code=404, detail="CIFS server not found")
-        return self._create_api_response([self._create_entry(server, request)], request)
+            raise HTTPException(status_code=404, detail=f"CIFS server with ID '{server_id}' not found")
 
-    async def list_cifs_servers(self, request: Request) -> ApiResponse:
-        """List all CIFS servers"""
-        entries = [self._create_entry(server, request) for server in self.cifs_servers.values()]
-        return self._create_api_response(entries, request)
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection([server], entry_links={0: [{"rel": "self", "href": f"/{server_id}"}]})
 
-    async def update_cifs_server(self, request: Request, server_id: str, update_data: CIFSServerUpdate) -> ApiResponse:
-        """Update a CIFS server"""
-        if server_id not in self.cifs_servers:
-            raise HTTPException(status_code=404, detail="CIFS server not found")
+    def list_cifs_servers(self, request: Request) -> ApiResponse[CIFSServer]:
+        """List all CIFS servers."""
+        servers = list(self.servers.values())
+        formatter = UnityResponseFormatter(request)
+        entry_links = {i: [{"rel": "self", "href": f"/{server.id}"}] for i, server in enumerate(servers)}
+        return formatter.format_collection(servers, entry_links=entry_links)
 
-        server = self.cifs_servers[server_id]
-        update_dict = update_data.model_dump(exclude_unset=True)
-        updated_server = CIFSServer(**{**server.model_dump(), **update_dict})
-        self.cifs_servers[server_id] = updated_server
-        return self._create_api_response([self._create_entry(updated_server, request)], request)
+    def update_cifs_server(
+        self, request: Request, server_id: str, server_data: CIFSServerUpdate
+    ) -> ApiResponse[CIFSServer]:
+        """Update a CIFS server."""
+        server = self.servers.get(server_id)
+        if not server:
+            raise HTTPException(status_code=404, detail=f"CIFS server with ID '{server_id}' not found")
 
-    async def delete_cifs_server(self, request: Request, server_id: str) -> ApiResponse:
-        """Delete a CIFS server"""
-        if server_id not in self.cifs_servers:
-            raise HTTPException(status_code=404, detail="CIFS server not found")
-        del self.cifs_servers[server_id]
-        return self._create_api_response([], request)
+        # Update server fields
+        update_data = server_data.model_dump(exclude_unset=True)
+        server_dict = server.model_dump()
+        server_dict.update(update_data)
+        updated_server = CIFSServer(**server_dict)
+        self.servers[server_id] = updated_server
+
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection(
+            [updated_server], entry_links={0: [{"rel": "self", "href": f"/{server_id}"}]}
+        )
+
+    def delete_cifs_server(self, request: Request, server_id: str) -> ApiResponse[None]:
+        """Delete a CIFS server."""
+        if server_id not in self.servers:
+            raise HTTPException(status_code=404, detail=f"CIFS server with ID '{server_id}' not found")
+
+        del self.servers[server_id]
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection([], entry_links={})

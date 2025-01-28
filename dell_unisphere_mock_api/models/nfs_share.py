@@ -5,14 +5,19 @@ from pydantic import BaseModel, Field
 
 class NFSShareBase(BaseModel):
     name: str = Field(..., description="Name of the NFS share")
-    description: Optional[str] = Field(None, description="Description of the NFS share")
+    description: str = Field(..., description="Description of the NFS share")
     filesystem_id: str = Field(..., description="ID of the filesystem this share belongs to")
     path: str = Field(..., description="Path to the shared directory")
-    default_access: str = Field(default="NO_ACCESS", description="Default access level for the share")
-    root_squash_enabled: bool = Field(default=True, description="Whether root squashing is enabled")
-    anonymous_uid: int = Field(default=65534, description="UID for anonymous access")
-    anonymous_gid: int = Field(default=65534, description="GID for anonymous access")
-    is_read_only: bool = Field(default=False, description="Whether the share is read-only")
+    default_access: str = Field(..., description="Default access level for the share")
+    root_squash_enabled: bool = Field(..., description="Whether root squashing is enabled")
+    anonymous_uid: int = Field(..., description="UID for anonymous access")
+    anonymous_gid: int = Field(..., description="GID for anonymous access")
+    is_read_only: bool = Field(..., description="Whether the share is read-only")
+    min_security: str = Field(..., description="Minimum security level for NFS clients")
+    no_access_hosts: List[str] = Field(..., description="List of hosts that are denied access")
+    read_only_hosts: List[str] = Field(..., description="List of hosts with read-only access")
+    read_write_hosts: List[str] = Field(..., description="List of hosts with read-write access")
+    root_access_hosts: List[str] = Field(..., description="List of hosts with root access")
 
 
 class NFSShareCreate(NFSShareBase):
@@ -26,6 +31,11 @@ class NFSShareUpdate(BaseModel):
     anonymous_uid: Optional[int] = None
     anonymous_gid: Optional[int] = None
     is_read_only: Optional[bool] = None
+    min_security: Optional[str] = None
+    no_access_hosts: Optional[List[str]] = None
+    read_only_hosts: Optional[List[str]] = None
+    read_write_hosts: Optional[List[str]] = None
+    root_access_hosts: Optional[List[str]] = None
 
 
 class NFSShare(NFSShareBase):

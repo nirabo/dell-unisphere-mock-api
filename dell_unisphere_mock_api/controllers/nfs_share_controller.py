@@ -1,80 +1,79 @@
-from datetime import datetime
-from typing import Dict, List
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
 
-from dell_unisphere_mock_api.core.response_models import ApiResponse, Entry, Link
+from dell_unisphere_mock_api.core.response import UnityResponseFormatter
+from dell_unisphere_mock_api.core.response_models import ApiResponse
 from dell_unisphere_mock_api.models.nfs_share import NFSShare, NFSShareCreate, NFSShareUpdate
 
 
 class NFSShareController:
+    """Controller for managing NFS shares."""
+
     def __init__(self):
-        self.nfs_shares: Dict[str, NFSShare] = {}
+        self.shares: dict[str, NFSShare] = {}
 
-    def _create_api_response(self, entries: List[Entry], request: Request) -> ApiResponse:
-        """Create standardized API response"""
-        base_url = str(request.base_url).rstrip("/")
-        return ApiResponse(
-            **{
-                "@base": f"{base_url}/api/types/nfsShare/instances",
-                "updated": datetime.utcnow(),
-                "links": [Link(rel="self", href=f"{base_url}/api/types/nfsShare/instances")],
-                "entries": entries,
-            }
-        )
-
-    def _create_entry(self, nfs_share: NFSShare, request: Request) -> Entry:
-        """Create standardized entry"""
-        base_url = str(request.base_url).rstrip("/")
-        return Entry(
-            **{
-                "@base": "storageObject",
-                "content": nfs_share,
-                "updated": datetime.utcnow(),
-                "links": [
-                    Link(rel="self", href=f"{base_url}/api/instances/nfsShare/{nfs_share.id}"),
-                    Link(rel="filesystem", href=f"{base_url}/api/instances/filesystem/{nfs_share.filesystem_id}"),
-                ],
-            }
-        )
-
-    async def create_nfs_share(self, request: Request, nfs_share: NFSShareCreate) -> ApiResponse:
-        """Create a new NFS share"""
+    def create_nfs_share(self, request: Request, share_data: NFSShareCreate) -> ApiResponse[NFSShare]:
+        """Create a new NFS share."""
         share_id = str(uuid4())
-        new_share = NFSShare(**{**nfs_share.dict(), "id": share_id})
-        self.nfs_shares[share_id] = new_share
-        return self._create_api_response([self._create_entry(new_share, request)], request)
+        share = NFSShare(
+            id=share_id,
+            name=share_data.name,
+            path=share_data.path,
+            description=share_data.description,
+            filesystem_id=share_data.filesystem_id,
+            default_access=share_data.default_access,
+            root_squash_enabled=share_data.root_squash_enabled,
+            anonymous_uid=share_data.anonymous_uid,
+            anonymous_gid=share_data.anonymous_gid,
+            is_read_only=share_data.is_read_only,
+            min_security=share_data.min_security,
+            no_access_hosts=share_data.no_access_hosts,
+            read_only_hosts=share_data.read_only_hosts,
+            read_write_hosts=share_data.read_write_hosts,
+            root_access_hosts=share_data.root_access_hosts,
+        )
 
-    async def get_nfs_share(self, request: Request, share_id: str) -> ApiResponse:
-        """Get an NFS share by ID"""
-        share = self.nfs_shares.get(share_id)
+        self.shares[share_id] = share
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection([share], entry_links={0: [{"rel": "self", "href": f"/{share_id}"}]})
+
+    def get_nfs_share(self, request: Request, share_id: str) -> ApiResponse[NFSShare]:
+        """Get an NFS share by ID."""
+        share = self.shares.get(share_id)
         if not share:
-            raise HTTPException(status_code=404, detail=f"NFS share {share_id} not found")
-        return self._create_api_response([self._create_entry(share, request)], request)
+            raise HTTPException(status_code=404, detail=f"NFS share with ID '{share_id}' not found")
 
-    async def list_nfs_shares(self, request: Request) -> ApiResponse:
-        """List all NFS shares"""
-        entries = [self._create_entry(share, request) for share in self.nfs_shares.values()]
-        return self._create_api_response(entries, request)
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection([share], entry_links={0: [{"rel": "self", "href": f"/{share_id}"}]})
 
-    async def update_nfs_share(self, request: Request, share_id: str, update_data: NFSShareUpdate) -> ApiResponse:
-        """Update an NFS share"""
-        if share_id not in self.nfs_shares:
-            raise HTTPException(status_code=404, detail=f"NFS share {share_id} not found")
+    def list_nfs_shares(self, request: Request) -> ApiResponse[NFSShare]:
+        """List all NFS shares."""
+        shares = list(self.shares.values())
+        formatter = UnityResponseFormatter(request)
+        entry_links = {i: [{"rel": "self", "href": f"/{share.id}"}] for i, share in enumerate(shares)}
+        return formatter.format_collection(shares, entry_links=entry_links)
 
-        share = self.nfs_shares[share_id]
-        updated_data = share.dict()
-        updated_data.update(update_data.dict(exclude_unset=True))
-        updated_share = NFSShare(**updated_data)
-        self.nfs_shares[share_id] = updated_share
+    def update_nfs_share(self, request: Request, share_id: str, share_data: NFSShareUpdate) -> ApiResponse[NFSShare]:
+        """Update an NFS share."""
+        share = self.shares.get(share_id)
+        if not share:
+            raise HTTPException(status_code=404, detail=f"NFS share with ID '{share_id}' not found")
 
-        return self._create_api_response([self._create_entry(updated_share, request)], request)
+        # Update share fields
+        update_data = share_data.model_dump(exclude_unset=True)
+        share_dict = share.model_dump()
+        share_dict.update(update_data)
+        updated_share = NFSShare(**share_dict)
+        self.shares[share_id] = updated_share
 
-    async def delete_nfs_share(self, request: Request, share_id: str) -> ApiResponse:
-        """Delete an NFS share"""
-        if share_id not in self.nfs_shares:
-            raise HTTPException(status_code=404, detail=f"NFS share {share_id} not found")
+        formatter = UnityResponseFormatter(request)
+        return formatter.format_collection([updated_share], entry_links={0: [{"rel": "self", "href": f"/{share_id}"}]})
 
-        share = self.nfs_shares.pop(share_id)
-        return self._create_api_response([self._create_entry(share, request)], request)
+    def delete_nfs_share(self, request: Request, share_id: str) -> bool:
+        """Delete an NFS share."""
+        if share_id not in self.shares:
+            raise HTTPException(status_code=404, detail=f"NFS share with ID '{share_id}' not found")
+
+        del self.shares[share_id]
+        return True

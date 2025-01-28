@@ -41,8 +41,24 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
                     response_body += chunk
 
                 # Parse JSON
-                data = json.loads(response_body)
-                logger.debug(f"Response data: {data}")
+                try:
+                    # Try to decode as UTF-8 first
+                    try:
+                        response_body_str = response_body.decode("utf-8")
+                    except UnicodeDecodeError:
+                        # If UTF-8 fails, try to decode as latin1
+                        response_body_str = response_body.decode("latin1")
+
+                    data = json.loads(response_body_str)
+                    logger.debug(f"Response data: {data}")
+                except json.JSONDecodeError:
+                    # If we can't decode the response body, return it as is
+                    return Response(
+                        content=response_body,
+                        status_code=response.status_code,
+                        headers=dict(response.headers),
+                        media_type=response.media_type,
+                    )
 
                 # Don't wrap responses that are already in our format
                 if isinstance(data, dict) and ("@base" in data or "errorCode" in data):
@@ -51,7 +67,7 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
                         content=response_body,
                         status_code=response.status_code,
                         headers=dict(response.headers),
-                        media_type="application/json",
+                        media_type=response.media_type,
                     )
 
                 # Create response wrapper

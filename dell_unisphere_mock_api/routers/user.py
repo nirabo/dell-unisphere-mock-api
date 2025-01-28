@@ -1,69 +1,74 @@
-"""User management router module."""
+"""User router."""
 
-from typing import Dict
+from datetime import datetime
+from typing import Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBasic
 
-from dell_unisphere_mock_api.core.auth import MOCK_USERS, get_current_user
+from dell_unisphere_mock_api.core.auth import get_current_user
+from dell_unisphere_mock_api.core.response_models import ApiResponse, Entry, Link
 
-router = APIRouter()
+router = APIRouter(prefix="/api/types/user/instances", tags=["user"])
+security = HTTPBasic()
 
 
-@router.get("/types/user/instances", response_model=Dict)
-async def get_users(current_user: Dict = Depends(get_current_user)) -> Dict:
-    """
-    Get a list of all users.
+@router.get("")
+async def get_users(current_user: Dict[str, str] = Depends(get_current_user)) -> ApiResponse:
+    """Get all users."""
+    entries = []
+    for user_id in ["admin"]:
+        entry = Entry(
+            content={
+                "id": f"user_{user_id}",
+                "name": user_id,
+                "role": "administrator",
+                "domain": "Local",
+                "is_built_in": True,
+                "is_locked": False,
+                "password_expiration_date": None,
+                "is_password_expired": False,
+            },
+            links=[
+                Link(rel="self", href=f"/api/types/user/instances/{user_id}"),
+            ],
+        )
+        entries.append(entry)
 
-    Args:
-        current_user: Currently authenticated user
+    return ApiResponse(
+        base="/api/types/user/instances",
+        updated=datetime.utcnow(),
+        entries=entries,
+    )
 
-    Returns:
-        Dict containing list of users with their details
-    """
-    users = []
-    for username, _ in MOCK_USERS.items():
-        users.append(
-            {
-                "@base": "https://localhost:8000/api/instances/user",
-                "updated": "2024-12-23T18:32:19+02:00",
-                "links": [{"rel": "self", "href": f"/user_{username}"}],
-                "content": {"id": f"user_{username}"},
-            }
+
+@router.get("/{user_id}")
+async def get_user(user_id: str, current_user: Dict[str, str] = Depends(get_current_user)) -> ApiResponse:
+    """Get a specific user."""
+    if user_id != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User {user_id} not found",
         )
 
-    return {
-        "@base": "https://localhost:8000/api/types/user/instances?per_page=2000",
-        "updated": "2024-12-23T18:32:19+02:00",
-        "links": [{"rel": "self", "href": "&page=1"}],
-        "entries": users,
-    }
+    entry = Entry(
+        content={
+            "id": f"user_{user_id}",
+            "name": user_id,
+            "role": "administrator",
+            "domain": "Local",
+            "is_built_in": True,
+            "is_locked": False,
+            "password_expiration_date": None,
+            "is_password_expired": False,
+        },
+        links=[
+            Link(rel="self", href=f"/api/types/user/instances/{user_id}"),
+        ],
+    )
 
-
-@router.get("/instances/user/{user_id}", response_model=Dict)
-async def get_user(user_id: str, current_user: Dict = Depends(get_current_user)) -> Dict:
-    """
-    Get details of a specific user.
-
-    Args:
-        user_id: ID of the user to retrieve
-        current_user: Currently authenticated user
-
-    Returns:
-        Dict containing user details
-
-    Raises:
-        HTTPException: If user is not found
-    """
-    # Extract username from user_id (remove 'user_' prefix)
-    username = user_id.replace("user_", "")
-
-    if username not in MOCK_USERS:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-    user_data = MOCK_USERS[username]
-    return {
-        "@base": "https://localhost:8000/api/instances/user",
-        "updated": "2024-12-23T18:32:19+02:00",
-        "links": [{"rel": "self", "href": f"/user_{username}"}],
-        "content": {"id": f"user_{username}", "role": user_data["role"]},
-    }
+    return ApiResponse(
+        base="/api/types/user/instances",
+        updated=datetime.utcnow(),
+        entries=[entry],
+    )

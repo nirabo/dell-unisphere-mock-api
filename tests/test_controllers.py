@@ -15,6 +15,16 @@ class TestStorageResourceController:
         return StorageResourceController()
 
     @pytest.fixture
+    def mock_request(self):
+        class MockRequest:
+            def __init__(self):
+                self.base_url = "http://testserver"
+                self.path = "/test"
+                self.url = type("URL", (), {"path": "/test"})()
+
+        return MockRequest()
+
+    @pytest.fixture
     def sample_resource_data(self):
         return StorageResourceCreate(
             name="test_resource",
@@ -28,68 +38,87 @@ class TestStorageResourceController:
         )
 
     @pytest.mark.asyncio
-    async def test_create_storage_resource(self, controller, sample_resource_data):
-        resource = await controller.create_storage_resource(sample_resource_data)
-        assert resource["name"] == sample_resource_data.name
-        assert resource["type"] == sample_resource_data.type
-        assert resource["health"] == "OK"
+    async def test_create_storage_resource(self, controller, mock_request, sample_resource_data):
+        response = await controller.create_storage_resource(mock_request, sample_resource_data)
+        resource = response.entries[0].content
+        assert resource.name == sample_resource_data.name
+        assert resource.type == sample_resource_data.type
+        assert resource.health == "OK"
 
     @pytest.mark.asyncio
-    async def test_get_storage_resource(self, controller, sample_resource_data):
-        created = await controller.create_storage_resource(sample_resource_data)
-        retrieved = await controller.get_storage_resource(created["id"])
+    async def test_get_storage_resource(self, controller, mock_request, sample_resource_data):
+        created_response = await controller.create_storage_resource(mock_request, sample_resource_data)
+        created = created_response.entries[0].content
+        retrieved_response = await controller.get_storage_resource(mock_request, created.id)
+        retrieved = retrieved_response.entries[0].content
         assert retrieved == created
 
     @pytest.mark.asyncio
-    async def test_list_storage_resources(self, controller, sample_resource_data):
-        await controller.create_storage_resource(sample_resource_data)
-        resources = await controller.list_storage_resources()
-        assert len(resources) == 1
-        assert resources[0]["name"] == sample_resource_data.name
+    async def test_list_storage_resources(self, controller, mock_request, sample_resource_data):
+        await controller.create_storage_resource(mock_request, sample_resource_data)
+        response = await controller.list_storage_resources(mock_request)
+        assert len(response.entries) == 1
+        assert response.entries[0].content.name == sample_resource_data.name
 
     @pytest.mark.asyncio
-    async def test_update_storage_resource(self, controller, sample_resource_data):
-        created = await controller.create_storage_resource(sample_resource_data)
+    async def test_update_storage_resource(self, controller, mock_request, sample_resource_data):
+        created_response = await controller.create_storage_resource(mock_request, sample_resource_data)
+        created = created_response.entries[0].content
         update_data = StorageResourceUpdate(description="Updated description", isCompressionEnabled=True)
-        updated = await controller.update_storage_resource(created["id"], update_data)
-        assert updated["description"] == update_data.description
-        assert updated["isCompressionEnabled"] == update_data.isCompressionEnabled
+        updated_response = await controller.update_storage_resource(mock_request, created.id, update_data)
+        updated = updated_response.entries[0].content
+        assert updated.description == update_data.description
+        assert updated.isCompressionEnabled == update_data.isCompressionEnabled
 
     @pytest.mark.asyncio
-    async def test_delete_storage_resource(self, controller, sample_resource_data):
-        created = await controller.create_storage_resource(sample_resource_data)
-        await controller.delete_storage_resource(created["id"])
+    async def test_delete_storage_resource(self, controller, mock_request, sample_resource_data):
+        created_response = await controller.create_storage_resource(mock_request, sample_resource_data)
+        created = created_response.entries[0].content
+        await controller.delete_storage_resource(mock_request, created.id)
         with pytest.raises(HTTPException) as exc_info:
-            await controller.get_storage_resource(created["id"])
+            await controller.get_storage_resource(mock_request, created.id)
         assert exc_info.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_host_access_management(self, controller, sample_resource_data):
-        created = await controller.create_storage_resource(sample_resource_data)
+    async def test_host_access_management(self, controller, mock_request, sample_resource_data):
+        created_response = await controller.create_storage_resource(mock_request, sample_resource_data)
+        created = created_response.entries[0].content
 
-        # Update host access
-        success = await controller.update_host_access(created["id"], "host1", "READ_WRITE")
-        assert success
+        # Add host access
+        updated_response = await controller.add_host_access(mock_request, created.id, "host1", "READ_WRITE")
+        updated = updated_response.entries[0].content
 
         # Verify host access was added
-        retrieved = await controller.get_storage_resource(created["id"])
-        assert len(retrieved["hostAccess"]) == 1
-        assert retrieved["hostAccess"][0]["host"] == "host1"
-        assert retrieved["hostAccess"][0]["accessType"] == "READ_WRITE"
+        retrieved_response = await controller.get_storage_resource(mock_request, created.id)
+        retrieved = retrieved_response.entries[0].content
+        assert len(retrieved.hostAccess) == 1
+        assert retrieved.hostAccess[0]["host"] == "host1"
+        assert retrieved.hostAccess[0]["accessType"] == "READ_WRITE"
 
         # Remove host access
-        success = await controller.remove_host_access(created["id"], "host1")
-        assert success
+        removed_response = await controller.remove_host_access(mock_request, created.id, "host1")
+        removed = removed_response.entries[0].content
 
         # Verify host access was removed
-        retrieved = await controller.get_storage_resource(created["id"])
-        assert len(retrieved["hostAccess"]) == 0
+        retrieved_response = await controller.get_storage_resource(mock_request, created.id)
+        retrieved = retrieved_response.entries[0].content
+        assert len(retrieved.hostAccess) == 0
 
 
 class TestFilesystemController:
     @pytest.fixture
     def controller(self):
         return FilesystemController()
+
+    @pytest.fixture
+    def mock_request(self):
+        class MockRequest:
+            def __init__(self):
+                self.base_url = "http://testserver"
+                self.path = "/test"
+                self.url = type("URL", (), {"path": "/test"})()
+
+        return MockRequest()
 
     @pytest.fixture
     def sample_filesystem_data(self):
@@ -101,19 +130,28 @@ class TestFilesystemController:
             size=1024 * 1024 * 1024 * 100,  # 100GB
             isThinEnabled=True,
             supportedProtocols=["NFS", "CIFS"],
+            isCacheEnabled=True,
+            isCompressionEnabled=False,
+            isAdvancedDedupEnabled=False,
+            isDataReductionEnabled=False,
         )
 
     @pytest.mark.asyncio
-    async def test_create_filesystem(self, controller, sample_filesystem_data):
-        fs = await controller.create_filesystem(sample_filesystem_data)
-        assert fs["name"] == sample_filesystem_data.name
-        assert fs["size"] == sample_filesystem_data.size
-        assert fs["health"] == "OK"
+    async def test_create_filesystem(self, controller, mock_request, sample_filesystem_data):
+        response = await controller.create_filesystem(request=mock_request, filesystem_data=sample_filesystem_data)
+        fs = response.entries[0].content
+        assert fs.name == sample_filesystem_data.name
+        assert fs.size == sample_filesystem_data.size
+        assert fs.health == "OK"
 
     @pytest.mark.asyncio
-    async def test_get_filesystem(self, controller, sample_filesystem_data):
-        created = await controller.create_filesystem(sample_filesystem_data)
-        retrieved = await controller.get_filesystem(created["id"])
+    async def test_get_filesystem(self, controller, mock_request, sample_filesystem_data):
+        created_response = await controller.create_filesystem(
+            request=mock_request, filesystem_data=sample_filesystem_data
+        )
+        created = created_response.entries[0].content
+        retrieved_response = await controller.get_filesystem(request=mock_request, filesystem_id=created.id)
+        retrieved = retrieved_response.entries[0].content
         assert retrieved == created
 
 
@@ -121,6 +159,16 @@ class TestNasServerController:
     @pytest.fixture
     def controller(self):
         return NasServerController()
+
+    @pytest.fixture
+    def mock_request(self):
+        class MockRequest:
+            def __init__(self):
+                self.base_url = "http://testserver"
+                self.path = "/test"
+                self.url = type("URL", (), {"path": "/test"})()
+
+        return MockRequest()
 
     @pytest.fixture
     def sample_nas_data(self):
@@ -141,13 +189,16 @@ class TestNasServerController:
         )
 
     @pytest.mark.asyncio
-    async def test_create_nas_server(self, controller, sample_nas_data):
-        nas = await controller.create_nas_server(sample_nas_data)
-        assert nas["name"] == sample_nas_data.name
-        assert nas["health"] == "OK"
+    async def test_create_nas_server(self, controller, mock_request, sample_nas_data):
+        response = await controller.create_nas_server(request=mock_request, nas_server_data=sample_nas_data)
+        nas = response.entries[0].content
+        assert nas.name == sample_nas_data.name
+        assert nas.health == "OK"
 
     @pytest.mark.asyncio
-    async def test_get_nas_server(self, controller, sample_nas_data):
-        created = await controller.create_nas_server(sample_nas_data)
-        retrieved = await controller.get_nas_server(created["id"])
+    async def test_get_nas_server(self, controller, mock_request, sample_nas_data):
+        created_response = await controller.create_nas_server(request=mock_request, nas_server_data=sample_nas_data)
+        created = created_response.entries[0].content
+        retrieved_response = await controller.get_nas_server(request=mock_request, nas_server_id=created.id)
+        retrieved = retrieved_response.entries[0].content
         assert retrieved == created

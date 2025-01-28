@@ -25,7 +25,7 @@ def sample_cifs_server_data():
         "name": "test_cifs_server",
         "description": "Test CIFS server",
         "nas_server_id": "nas_1",
-        "domain": "test.local",
+        "domain_name": "test.local",
         "netbios_name": "TESTCIFS",
         "workgroup": "WORKGROUP",
         "is_standalone": True,
@@ -43,6 +43,7 @@ async def test_create_cifs_server(cifs_server_controller, mock_request, sample_c
     content = response_dict["entries"][0]["content"]
     assert content["name"] == sample_cifs_server_data["name"]
     assert content["description"] == sample_cifs_server_data["description"]
+    assert content["nas_server_id"] == sample_cifs_server_data["nas_server_id"]
 
 
 @pytest.mark.asyncio
@@ -60,6 +61,7 @@ async def test_get_cifs_server(cifs_server_controller, mock_request, sample_cifs
     content = response_dict["entries"][0]["content"]
     assert content["name"] == sample_cifs_server_data["name"]
     assert content["description"] == sample_cifs_server_data["description"]
+    assert content["nas_server_id"] == sample_cifs_server_data["nas_server_id"]
 
 
 @pytest.mark.asyncio
@@ -78,23 +80,30 @@ async def test_list_cifs_servers(cifs_server_controller, mock_request, sample_ci
     content = response_dict["entries"][0]["content"]
     assert content["id"] == created_id
     assert content["name"] == created_name
+    assert content["nas_server_id"] == sample_cifs_server_data["nas_server_id"]
 
 
 @pytest.mark.asyncio
 async def test_update_cifs_server(cifs_server_controller, mock_request, sample_cifs_server_data):
     # First create a CIFS server
     cifs_server_data = CIFSServerCreate(**sample_cifs_server_data)
-    created = await cifs_server_controller.create_cifs_server(mock_request, cifs_server_data)
+    created = cifs_server_controller.create_cifs_server(mock_request, cifs_server_data)
     created_dict = created.model_dump()
     cifs_server_id = created_dict["entries"][0]["content"]["id"]
 
     # Update it
-    update_data = CIFSServerUpdate(description="Updated description")
-    response = await cifs_server_controller.update_cifs_server(mock_request, cifs_server_id, update_data)
+    update_data = CIFSServerUpdate(
+        description="Updated description", domain_name="updated.domain", workgroup="NEWGROUP"
+    )
+    response = cifs_server_controller.update_cifs_server(mock_request, cifs_server_id, update_data)
     response_dict = response.model_dump()
     assert len(response_dict["entries"]) == 1
     content = response_dict["entries"][0]["content"]
     assert content["description"] == "Updated description"
+    assert content["domain_name"] == "updated.domain"
+    assert content["workgroup"] == "NEWGROUP"
+    assert content["name"] == sample_cifs_server_data["name"]  # Name should be unchanged
+    assert content["nas_server_id"] == sample_cifs_server_data["nas_server_id"]
 
 
 @pytest.mark.asyncio
@@ -113,4 +122,23 @@ async def test_delete_cifs_server(cifs_server_controller, mock_request, sample_c
     # Verify it's deleted
     with pytest.raises(HTTPException) as exc_info:
         await cifs_server_controller.get_cifs_server(mock_request, cifs_server_id)
+    assert exc_info.value.status_code == 404
+
+
+def test_get_nonexistent_cifs_server(cifs_server_controller, mock_request):
+    with pytest.raises(HTTPException) as exc_info:
+        cifs_server_controller.get_cifs_server(mock_request, "nonexistent-id")
+    assert exc_info.value.status_code == 404
+
+
+def test_update_nonexistent_cifs_server(cifs_server_controller, mock_request):
+    update_data = CIFSServerUpdate(name="updated_server")
+    with pytest.raises(HTTPException) as exc_info:
+        cifs_server_controller.update_cifs_server(mock_request, "nonexistent-id", update_data)
+    assert exc_info.value.status_code == 404
+
+
+def test_delete_nonexistent_cifs_server(cifs_server_controller, mock_request):
+    with pytest.raises(HTTPException) as exc_info:
+        cifs_server_controller.delete_cifs_server(mock_request, "nonexistent-id")
     assert exc_info.value.status_code == 404

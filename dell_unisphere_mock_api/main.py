@@ -2,16 +2,19 @@
 
 import logging
 import logging.config
+import os
+import secrets
+from typing import Callable
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_token
-from dell_unisphere_mock_api.middleware.response_headers import ResponseHeaderMiddleware
+from dell_unisphere_mock_api.middleware.response_headers import ResponseHeaderMiddleware as ResponseHeadersMiddleware
 from dell_unisphere_mock_api.middleware.response_wrapper import ResponseWrapperMiddleware
 from dell_unisphere_mock_api.routers import (
     acl_user,
-    auth,
     cifs_server,
     disk,
     disk_group,
@@ -101,10 +104,13 @@ def custom_openapi():
             "description": "Required header for all requests",
         },
         "emcCsrfToken": {
-            "type": "apiKey",
+            "type": "string",
             "in": "header",
-            "name": "EMC-CSRF-TOKEN",
-            "description": "Required header for POST, PATCH and DELETE requests. Obtained from /api/auth endpoint.",
+            "required": True,
+            "description": (
+                "Required header for POST, PATCH and DELETE requests. "
+                "Obtained from any GET request response headers."
+            ),
         },
     }
 
@@ -124,109 +130,144 @@ def custom_openapi():
     return _openapi_schema
 
 
-app = FastAPI(
-    title="Mock Unity Unisphere API",
-    description="A mock implementation of Dell Unity Unisphere Management REST API.",
-    version=get_version(),
-    swagger_ui_parameters={
-        "persistAuthorization": True,
-        "requestInterceptor": """(req) => {
-            console.log('Starting request interceptor');
+def create_application() -> FastAPI:
+    """Create FastAPI application.
 
-            // Add X-EMC-REST-CLIENT header
-            req.headers['X-EMC-REST-CLIENT'] = 'true';
+    Returns:
+        FastAPI application.
+    """
+    # Create FastAPI app
+    app = FastAPI(
+        title="Mock Unity Unisphere API",
+        description="A mock implementation of Dell Unity Unisphere Management REST API.",
+        version=get_version(),
+        swagger_ui_parameters={
+            "persistAuthorization": True,
+            "requestInterceptor": """(req) => {
+                console.log('Starting request interceptor');
 
-            // Add Authorization header if credentials are provided
-            const auth = localStorage.getItem('auth');
-            if (auth) {
-                const {username, password} = JSON.parse(auth);
-                req.headers['Authorization'] = 'Basic ' + btoa(username + ':' + password);
-            }
+                // Add X-EMC-REST-CLIENT header
+                req.headers['X-EMC-REST-CLIENT'] = 'true';
 
-            // For POST, PATCH, DELETE requests, add CSRF token
-            if (['POST', 'PATCH', 'DELETE'].includes(req.method.toUpperCase()) && !req.url.endsWith('/api/auth')) {
-                // First try to get token from localStorage
-                const storedToken = localStorage.getItem('emc_csrf_token');
-                if (storedToken) {
-                    req.headers['EMC-CSRF-TOKEN'] = storedToken;
-                    console.log('Added stored CSRF token:', storedToken);
-                } else {
-                    console.log('No CSRF token found in storage');
+                // Add Authorization header if credentials are provided
+                const auth = localStorage.getItem('auth');
+                if (auth) {
+                    const {username, password} = JSON.parse(auth);
+                    req.headers['Authorization'] = 'Basic ' + btoa(username + ':' + password);
                 }
-            }
 
-            console.log('Final request headers:', req.headers);
-            return req;
-        }""",
-        "responseInterceptor": """(response) => {
-            console.log('Response interceptor:', response.url);
+                // For POST, PATCH, DELETE requests, add CSRF token
+                if (['POST', 'PATCH', 'DELETE'].includes(req.method.toUpperCase())) {
+                    // First try to get token from localStorage
+                    const storedToken = localStorage.getItem('emc_csrf_token');
+                    if (storedToken) {
+                        req.headers['EMC-CSRF-TOKEN'] = storedToken;
+                        console.log('Added stored CSRF token:', storedToken);
+                    } else {
+                        console.log('No CSRF token found in storage');
+                    }
+                }
 
-            // Get CSRF token from response headers
-            const token = response.headers.get('EMC-CSRF-TOKEN');
-            if (token) {
-                console.log('Got CSRF token from response:', token);
-                localStorage.setItem('emc_csrf_token', token);
-            }
+                console.log('Final request headers:', req.headers);
+                return req;
+            }""",
+            "responseInterceptor": """(response) => {
+                console.log('Response interceptor:', response.url);
 
-            return response;
-        }""",
-    },
-)
+                // Get CSRF token from response headers
+                const token = response.headers.get('EMC-CSRF-TOKEN');
+                if (token) {
+                    console.log('Got CSRF token from response:', token);
+                    localStorage.setItem('emc_csrf_token', token);
+                }
 
-app.openapi = custom_openapi
+                return response;
+            }""",
+        },
+    )
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    app.openapi = custom_openapi
 
-# Add response headers middleware
-app.add_middleware(ResponseHeaderMiddleware)
+    # Configure CORS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
-# Add response wrapper middleware
-app.add_middleware(ResponseWrapperMiddleware)
+    # Add GZip middleware
+    app.add_middleware(GZipMiddleware)
+
+    # Add response headers middleware
+    app.add_middleware(ResponseHeadersMiddleware)
+
+    # Add response wrapper middleware
+    app.add_middleware(ResponseWrapperMiddleware)
+
+    # Middleware to verify CSRF token for POST, PATCH and DELETE requests
+    @app.middleware("http")
+    async def csrf_middleware(request: Request, call_next: Callable) -> Response:
+        """Verify CSRF token for POST, PATCH and DELETE requests."""
+        # Skip CSRF validation for session endpoints and GET requests
+        if (
+            request.url.path.startswith("/api/types/loginSessionInfo")
+            or request.url.path.startswith("/api/types/session")
+            or request.url.path.startswith("/api/types/user")
+            or request.method == "GET"
+        ):
+            response = await call_next(request)
+            response.headers["EMC-CSRF-TOKEN"] = secrets.token_hex(32)
+            return response
+
+        # Skip CSRF validation for non-mutating methods
+        if request.method in ["POST", "PATCH", "DELETE"]:
+            verify_csrf_token(request, request.method)
+
+        response = await call_next(request)
+        response.headers["EMC-CSRF-TOKEN"] = secrets.token_hex(32)
+        return response
+
+    # Configure routers
+    app.include_router(session.router, tags=["Session"])
+    app.include_router(
+        storage_resource.router, prefix="/api", tags=["Storage Resource"], dependencies=[Depends(get_current_user)]
+    )
+    app.include_router(filesystem.router, prefix="/api", tags=["Filesystem"], dependencies=[Depends(get_current_user)])
+    app.include_router(lun.router, prefix="/api", tags=["LUN"], dependencies=[Depends(get_current_user)])
+    app.include_router(pool.router, prefix="/api", tags=["Pool"], dependencies=[Depends(get_current_user)])
+    app.include_router(pool_unit.router, prefix="/api", tags=["Pool Unit"], dependencies=[Depends(get_current_user)])
+    app.include_router(disk_group.router, prefix="/api", tags=["Disk Group"], dependencies=[Depends(get_current_user)])
+    app.include_router(disk.router, prefix="/api", tags=["Disk"], dependencies=[Depends(get_current_user)])
+    app.include_router(nas_server.router, prefix="/api", tags=["NAS Server"], dependencies=[Depends(get_current_user)])
+    app.include_router(job.router, prefix="/api", tags=["Job"], dependencies=[Depends(get_current_user)])
+    app.include_router(user.router, prefix="/api", tags=["User"], dependencies=[Depends(get_current_user)])
+    app.include_router(system_info.router, prefix="/api", tags=["System Info"])
+    app.include_router(
+        cifs_server.router, prefix="/api", tags=["CIFS Server"], dependencies=[Depends(get_current_user)]
+    )
+    app.include_router(nfs_share.router, prefix="/api", tags=["NFS Share"], dependencies=[Depends(get_current_user)])
+    app.include_router(quota.router, prefix="/api", tags=["Quota Management"], dependencies=[Depends(get_current_user)])
+    app.include_router(acl_user.router, prefix="/api", tags=["ACL User"], dependencies=[Depends(get_current_user)])
+    app.include_router(tenant.router, prefix="/api", tags=["Tenant"], dependencies=[Depends(get_current_user)])
+
+    return app
 
 
-# Middleware to verify CSRF token for POST, PATCH and DELETE requests
-@app.middleware("http")
-async def csrf_middleware(request: Request, call_next) -> Response:
-    """Verify CSRF token for POST, PATCH and DELETE requests."""
-    try:
-        verify_csrf_token(request, request.method)
-    except HTTPException as e:
-        if e.status_code == status.HTTP_403_FORBIDDEN:
-            return Response(content=str(e.detail), status_code=e.status_code, headers=e.headers)
-    response = await call_next(request)
-    return response
+app = create_application()
 
-
-# Configure routers
-app.include_router(auth.router, prefix="/api", tags=["Auth"])
-app.include_router(session.router, tags=["Session"])
-app.include_router(
-    storage_resource.router, prefix="/api", tags=["Storage Resource"], dependencies=[Depends(get_current_user)]
-)
-app.include_router(filesystem.router, prefix="/api", tags=["Filesystem"], dependencies=[Depends(get_current_user)])
-app.include_router(lun.router, prefix="/api", tags=["LUN"], dependencies=[Depends(get_current_user)])
-app.include_router(pool.router, prefix="/api", tags=["Pool"], dependencies=[Depends(get_current_user)])
-app.include_router(pool_unit.router, prefix="/api", tags=["Pool Unit"], dependencies=[Depends(get_current_user)])
-app.include_router(disk_group.router, prefix="/api", tags=["Disk Group"], dependencies=[Depends(get_current_user)])
-app.include_router(disk.router, prefix="/api", tags=["Disk"], dependencies=[Depends(get_current_user)])
-app.include_router(nas_server.router, prefix="/api", tags=["NAS Server"], dependencies=[Depends(get_current_user)])
-app.include_router(job.router, prefix="/api", tags=["Job"], dependencies=[Depends(get_current_user)])
-app.include_router(user.router, prefix="/api", tags=["User"], dependencies=[Depends(get_current_user)])
-app.include_router(system_info.router, prefix="/api", tags=["System Info"])
-app.include_router(cifs_server.router, prefix="/api", tags=["CIFS Server"], dependencies=[Depends(get_current_user)])
-app.include_router(nfs_share.router, prefix="/api", tags=["NFS Share"], dependencies=[Depends(get_current_user)])
-app.include_router(quota.router, prefix="/api", tags=["Quota Management"], dependencies=[Depends(get_current_user)])
-app.include_router(acl_user.router, prefix="/api", tags=["ACL User"], dependencies=[Depends(get_current_user)])
-app.include_router(tenant.router, prefix="/api", tags=["Tenant"], dependencies=[Depends(get_current_user)])
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    # Get port from environment variable or use default
+    port = int(os.getenv("PORT", "8000"))
+
+    # Run server
+    uvicorn.run(
+        "dell_unisphere_mock_api.main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=True,
+    )

@@ -12,7 +12,7 @@ class FilesystemController:
     def __init__(self):
         self.filesystem_model = FilesystemModel()
 
-    async def create_filesystem(self, filesystem_data: FilesystemCreate, request: Request) -> ApiResponse:
+    async def create_filesystem(self, request: Request, filesystem_data: FilesystemCreate) -> ApiResponse:
         try:
             # Validate NAS server existence (in a real implementation)
             # Validate pool existence and capacity (in a real implementation)
@@ -26,7 +26,7 @@ class FilesystemController:
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-    async def get_filesystem(self, filesystem_id: str, request: Request) -> ApiResponse:
+    async def get_filesystem(self, request: Request, filesystem_id: str) -> ApiResponse:
         filesystem = self.filesystem_model.get_filesystem(filesystem_id)
         if not filesystem:
             raise HTTPException(status_code=404, detail=f"Filesystem {filesystem_id} not found")
@@ -45,7 +45,7 @@ class FilesystemController:
         return formatter.format_collection(filesystem_responses)
 
     async def update_filesystem(
-        self, filesystem_id: str, update_data: FilesystemUpdate, request: Request
+        self, request: Request, filesystem_id: str, update_data: FilesystemUpdate
     ) -> ApiResponse:
         # Validate size increase
         if update_data.size is not None:
@@ -67,7 +67,7 @@ class FilesystemController:
             content=filesystem_response, resource_type="filesystem", resource_id=filesystem_response.id
         )
 
-    async def delete_filesystem(self, filesystem_id: str, request: Request) -> Optional[ApiResponse]:
+    async def delete_filesystem(self, request: Request, filesystem_id: str) -> Optional[ApiResponse]:
         # Check if filesystem exists
         filesystem = self.filesystem_model.get_filesystem(filesystem_id)
         if not filesystem:
@@ -81,7 +81,7 @@ class FilesystemController:
             return None
         raise HTTPException(status_code=500, detail="Failed to delete filesystem")
 
-    async def add_share(self, filesystem_id: str, share_id: str, share_type: str, request: Request) -> ApiResponse:
+    async def add_share(self, request: Request, filesystem_id: str, share_id: str, share_type: str) -> ApiResponse:
         if not self.filesystem_model.add_share(filesystem_id, share_id, share_type):
             raise HTTPException(status_code=404, detail=f"Filesystem {filesystem_id} not found")
 
@@ -92,7 +92,7 @@ class FilesystemController:
             content=filesystem_response, resource_type="filesystem", resource_id=filesystem_response.id
         )
 
-    async def remove_share(self, filesystem_id: str, share_id: str, share_type: str, request: Request) -> ApiResponse:
+    async def remove_share(self, request: Request, filesystem_id: str, share_id: str, share_type: str) -> ApiResponse:
         if not self.filesystem_model.remove_share(filesystem_id, share_id, share_type):
             raise HTTPException(status_code=404, detail=f"Filesystem {filesystem_id} not found")
 
