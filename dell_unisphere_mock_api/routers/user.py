@@ -1,49 +1,59 @@
 """User router."""
 
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic
+from pydantic import BaseModel
 
 from dell_unisphere_mock_api.core.auth import get_current_user
-from dell_unisphere_mock_api.core.response_models import ApiResponse, Entry, Link
+from dell_unisphere_mock_api.core.response import UnityResponseFormatter
+from dell_unisphere_mock_api.core.response_models import ApiResponse, Link
 
-router = APIRouter(prefix="/api/types/user/instances", tags=["user"])
+
+class User(BaseModel):
+    """User model for Unity API responses."""
+
+    id: str
+    name: str
+    role: str
+    domain: str
+    is_built_in: bool
+    is_locked: bool
+    password_expiration_date: Optional[datetime] = None
+    is_password_expired: bool
+
+
+router = APIRouter(prefix="/types/user/instances", tags=["User"])
 security = HTTPBasic()
 
 
 @router.get("")
-async def get_users(current_user: Dict[str, str] = Depends(get_current_user)) -> ApiResponse:
+async def get_users(request: Request, current_user: Dict[str, str] = Depends(get_current_user)) -> ApiResponse[User]:
     """Get all users."""
-    entries = []
+    users = []
     for user_id in ["admin"]:
-        entry = Entry(
-            content={
-                "id": f"user_{user_id}",
-                "name": user_id,
-                "role": "administrator",
-                "domain": "Local",
-                "is_built_in": True,
-                "is_locked": False,
-                "password_expiration_date": None,
-                "is_password_expired": False,
-            },
-            links=[
-                Link(rel="self", href=f"/api/types/user/instances/{user_id}"),
-            ],
+        user = User(
+            id=f"user_{user_id}",
+            name=user_id,
+            role="administrator",
+            domain="Local",
+            is_built_in=True,
+            is_locked=False,
+            password_expiration_date=None,
+            is_password_expired=False,
         )
-        entries.append(entry)
+        users.append(user)
 
-    return ApiResponse(
-        base="/api/types/user/instances",
-        updated=datetime.utcnow(),
-        entries=entries,
-    )
+    formatter = UnityResponseFormatter(request)
+    return formatter.format_collection(users)
 
 
 @router.get("/{user_id}")
-async def get_user(user_id: str, current_user: Dict[str, str] = Depends(get_current_user)) -> ApiResponse:
+async def get_user(
+    user_id: str, request: Request, current_user: Dict[str, str] = Depends(get_current_user)
+) -> ApiResponse[User]:
     """Get a specific user."""
     if user_id != "admin":
         raise HTTPException(
@@ -51,24 +61,16 @@ async def get_user(user_id: str, current_user: Dict[str, str] = Depends(get_curr
             detail=f"User {user_id} not found",
         )
 
-    entry = Entry(
-        content={
-            "id": f"user_{user_id}",
-            "name": user_id,
-            "role": "administrator",
-            "domain": "Local",
-            "is_built_in": True,
-            "is_locked": False,
-            "password_expiration_date": None,
-            "is_password_expired": False,
-        },
-        links=[
-            Link(rel="self", href=f"/api/types/user/instances/{user_id}"),
-        ],
+    user = User(
+        id=f"user_{user_id}",
+        name=user_id,
+        role="administrator",
+        domain="Local",
+        is_built_in=True,
+        is_locked=False,
+        password_expiration_date=None,
+        is_password_expired=False,
     )
 
-    return ApiResponse(
-        base="/api/types/user/instances",
-        updated=datetime.utcnow(),
-        entries=[entry],
-    )
+    formatter = UnityResponseFormatter(request)
+    return formatter.format_item(user)

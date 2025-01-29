@@ -3,14 +3,16 @@
 import logging
 import logging.config
 import os
-import secrets
-from typing import Callable
+from datetime import datetime, timezone
 
-from fastapi import Depends, FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
 
-from dell_unisphere_mock_api.core.auth import get_current_user, verify_csrf_token
+from dell_unisphere_mock_api.core.auth import get_current_user
+from dell_unisphere_mock_api.middleware.csrf import CSRFMiddleware
 from dell_unisphere_mock_api.middleware.response_headers import ResponseHeaderMiddleware as ResponseHeadersMiddleware
 from dell_unisphere_mock_api.middleware.response_wrapper import ResponseWrapperMiddleware
 from dell_unisphere_mock_api.routers import (
@@ -44,32 +46,25 @@ logging_config = {
         },
         "access": {
             "()": "uvicorn.logging.AccessFormatter",
-            "fmt": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            "fmt": '%(asctime)s - %(name)s - %(levelname)s - %(client_addr)s - "%(request_line)s" %(status_code)s',
         },
     },
     "handlers": {
         "default": {
+            "formatter": "default",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stderr",
-            "formatter": "default",
         },
         "access": {
+            "formatter": "access",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
-            "formatter": "access",
         },
     },
     "loggers": {
-        "uvicorn.error": {
-            "level": "INFO",
-            "handlers": ["default"],
-            "propagate": False,
-        },
-        "uvicorn.access": {
-            "level": "INFO",
-            "handlers": ["access"],
-            "propagate": False,
-        },
+        "": {"handlers": ["default"], "level": "DEBUG"},
+        "uvicorn.error": {"level": "DEBUG"},
+        "uvicorn.access": {"handlers": ["access"], "level": "DEBUG", "propagate": False},
     },
 }
 
@@ -83,51 +78,66 @@ _openapi_schema = None
 
 def custom_openapi():
     global _openapi_schema
+    logger = logging.getLogger(__name__)
 
     if _openapi_schema:
         return _openapi_schema
 
-    # Get the original schema
-    openapi_schema = original_openapi(app)
+    try:
+        # Get the original schema by calling the original function bound to our app instance
+        logger.debug("Getting original OpenAPI schema...")
+        openapi_schema = original_openapi.__get__(app, FastAPI)()
+        logger.debug(f"Original schema: {openapi_schema}")
 
-    # Add security schemes
-    openapi_schema["components"]["securitySchemes"] = {
-        "basicAuth": {
-            "type": "http",
-            "scheme": "basic",
-            "description": "Basic authentication with X-EMC-REST-CLIENT header",
-        },
-        "emcRestClient": {
-            "type": "apiKey",
-            "in": "header",
-            "name": "X-EMC-REST-CLIENT",
-            "description": "Required header for all requests",
-        },
-        "emcCsrfToken": {
-            "type": "string",
-            "in": "header",
-            "required": True,
-            "description": (
-                "Required header for POST, PATCH and DELETE requests. "
-                "Obtained from any GET request response headers."
-            ),
-        },
-    }
+        # Add security schemes
+        logger.debug("Adding security schemes...")
+        if "components" not in openapi_schema:
+            openapi_schema["components"] = {}
+        openapi_schema["components"]["securitySchemes"] = {
+            "basicAuth": {
+                "type": "http",
+                "scheme": "basic",
+                "description": "Basic authentication with X-EMC-REST-CLIENT header",
+            },
+            "emcRestClient": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "X-EMC-REST-CLIENT",
+                "description": "Required header for all requests",
+            },
+            "emcCsrfToken": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "EMC-CSRF-TOKEN",
+                "description": (
+                    "Required header for POST, PATCH and DELETE requests. "
+                    "Obtained from any GET request response headers."
+                ),
+            },
+        }
 
-    # Apply security schemes to all operations
-    for path in openapi_schema["paths"].values():
-        for operation in path.values():
-            if "security" not in operation:
-                operation["security"] = [
-                    {"basicAuth": []},
-                    {"emcRestClient": []},
-                ]
-            # Add CSRF token requirement for POST, PATCH, DELETE methods
-            if operation.get("method", "").upper() in ["POST", "PATCH", "DELETE"]:
-                operation["security"].append({"emcCsrfToken": []})
+        # Apply security schemes to all paths
+        logger.debug("Applying security schemes to paths...")
+        for path, path_item in openapi_schema["paths"].items():
+            logger.debug(f"Processing path: {path}")
+            # Add basic security to all operations
+            for method, operation in path_item.items():
+                if method.upper() != "GET":  # Skip security for GET requests
+                    logger.debug(f"Adding security to {method.upper()} {path}")
+                    operation["security"] = [
+                        {"basicAuth": []},
+                        {"emcRestClient": []},
+                    ]
+                    # Add CSRF token requirement for POST, PATCH, DELETE methods
+                    if method.upper() in ["POST", "PATCH", "DELETE"]:
+                        operation["security"].append({"emcCsrfToken": []})
 
-    _openapi_schema = openapi_schema
-    return _openapi_schema
+        _openapi_schema = openapi_schema
+        logger.debug("OpenAPI schema generation complete")
+        return _openapi_schema
+    except Exception as e:
+        logger.exception(f"Error generating OpenAPI schema: {e}")
+        raise
 
 
 def create_application() -> FastAPI:
@@ -136,129 +146,111 @@ def create_application() -> FastAPI:
     Returns:
         FastAPI application.
     """
-    # Create FastAPI app
-    app = FastAPI(
-        title="Mock Unity Unisphere API",
-        description="A mock implementation of Dell Unity Unisphere Management REST API.",
+    application = FastAPI(
+        title="Dell Unisphere Mock API",
+        description="Mock API for Dell Unisphere",
         version=get_version(),
-        swagger_ui_parameters={
-            "persistAuthorization": True,
-            "requestInterceptor": """(req) => {
-                console.log('Starting request interceptor');
-
-                // Add X-EMC-REST-CLIENT header
-                req.headers['X-EMC-REST-CLIENT'] = 'true';
-
-                // Add Authorization header if credentials are provided
-                const auth = localStorage.getItem('auth');
-                if (auth) {
-                    const {username, password} = JSON.parse(auth);
-                    req.headers['Authorization'] = 'Basic ' + btoa(username + ':' + password);
-                }
-
-                // For POST, PATCH, DELETE requests, add CSRF token
-                if (['POST', 'PATCH', 'DELETE'].includes(req.method.toUpperCase())) {
-                    // First try to get token from localStorage
-                    const storedToken = localStorage.getItem('emc_csrf_token');
-                    if (storedToken) {
-                        req.headers['EMC-CSRF-TOKEN'] = storedToken;
-                        console.log('Added stored CSRF token:', storedToken);
-                    } else {
-                        console.log('No CSRF token found in storage');
-                    }
-                }
-
-                console.log('Final request headers:', req.headers);
-                return req;
-            }""",
-            "responseInterceptor": """(response) => {
-                console.log('Response interceptor:', response.url);
-
-                // Get CSRF token from response headers
-                const token = response.headers.get('EMC-CSRF-TOKEN');
-                if (token) {
-                    console.log('Got CSRF token from response:', token);
-                    localStorage.setItem('emc_csrf_token', token);
-                }
-
-                return response;
-            }""",
-        },
     )
 
-    app.openapi = custom_openapi
-
-    # Configure CORS
-    app.add_middleware(
+    # Add middleware
+    application.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    application.add_middleware(GZipMiddleware)
+    application.add_middleware(ResponseHeadersMiddleware)
+    application.add_middleware(ResponseWrapperMiddleware)
+    application.add_middleware(CSRFMiddleware)
 
-    # Add GZip middleware
-    app.add_middleware(GZipMiddleware)
+    # Set custom OpenAPI schema generator
+    application.openapi = custom_openapi
 
-    # Add response headers middleware
-    app.add_middleware(ResponseHeadersMiddleware)
+    # Add debug endpoint for OpenAPI schema
+    @application.get("/debug/openapi", include_in_schema=False)
+    async def debug_openapi():
+        """Debug endpoint to view the raw OpenAPI schema."""
+        try:
+            schema = custom_openapi()
+            return JSONResponse(content=schema)
+        except Exception as e:
+            return JSONResponse(
+                status_code=500,
+                content={"error": str(e), "traceback": traceback.format_exc()},
+            )
 
-    # Add response wrapper middleware
-    app.add_middleware(ResponseWrapperMiddleware)
+    # Add custom exception handler for validation errors
+    @application.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        """Handle validation errors in a Unity API compatible way."""
+        error_messages = []
+        for error in exc.errors():
+            field = error["loc"][-1] if error["loc"] else "unknown"
+            error_messages.append(f"Invalid value for field '{field}': {error['msg']}")
 
-    # Middleware to verify CSRF token for POST, PATCH and DELETE requests
-    @app.middleware("http")
-    async def csrf_middleware(request: Request, call_next: Callable) -> Response:
-        """Verify CSRF token for POST, PATCH and DELETE requests."""
-        # Skip CSRF validation for session endpoints and GET requests
-        if (
-            request.url.path.startswith("/api/types/loginSessionInfo")
-            or request.url.path.startswith("/api/types/session")
-            or request.url.path.startswith("/api/types/user")
-            or request.method == "GET"
-        ):
-            response = await call_next(request)
-            response.headers["EMC-CSRF-TOKEN"] = secrets.token_hex(32)
-            return response
-
-        # Skip CSRF validation for non-mutating methods
-        if request.method in ["POST", "PATCH", "DELETE"]:
-            verify_csrf_token(request, request.method)
-
-        response = await call_next(request)
-        response.headers["EMC-CSRF-TOKEN"] = secrets.token_hex(32)
-        return response
+        error_response = {
+            "errorCode": 422,
+            "httpStatusCode": 422,
+            "messages": error_messages,
+            "created": datetime.now(timezone.utc).isoformat(),
+        }
+        return JSONResponse(
+            status_code=422,
+            content=error_response,
+        )
 
     # Configure routers
-    app.include_router(session.router, tags=["Session"])
-    app.include_router(
-        storage_resource.router, prefix="/api", tags=["Storage Resource"], dependencies=[Depends(get_current_user)]
+    application.include_router(session.router, tags=["Session"], prefix="/api")
+    application.include_router(
+        storage_resource.router, tags=["Storage Resource"], dependencies=[Depends(get_current_user)], prefix="/api"
     )
-    app.include_router(filesystem.router, prefix="/api", tags=["Filesystem"], dependencies=[Depends(get_current_user)])
-    app.include_router(lun.router, prefix="/api", tags=["LUN"], dependencies=[Depends(get_current_user)])
-    app.include_router(pool.router, prefix="/api", tags=["Pool"], dependencies=[Depends(get_current_user)])
-    app.include_router(pool_unit.router, prefix="/api", tags=["Pool Unit"], dependencies=[Depends(get_current_user)])
-    app.include_router(disk_group.router, prefix="/api", tags=["Disk Group"], dependencies=[Depends(get_current_user)])
-    app.include_router(disk.router, prefix="/api", tags=["Disk"], dependencies=[Depends(get_current_user)])
-    app.include_router(nas_server.router, prefix="/api", tags=["NAS Server"], dependencies=[Depends(get_current_user)])
-    app.include_router(job.router, prefix="/api", tags=["Job"], dependencies=[Depends(get_current_user)])
-    app.include_router(user.router, prefix="/api", tags=["User"], dependencies=[Depends(get_current_user)])
-    app.include_router(system_info.router, prefix="/api", tags=["System Info"])
-    app.include_router(
-        cifs_server.router, prefix="/api", tags=["CIFS Server"], dependencies=[Depends(get_current_user)]
+    application.include_router(
+        filesystem.router, tags=["Filesystem"], dependencies=[Depends(get_current_user)], prefix="/api"
     )
-    app.include_router(nfs_share.router, prefix="/api", tags=["NFS Share"], dependencies=[Depends(get_current_user)])
-    app.include_router(quota.router, prefix="/api", tags=["Quota Management"], dependencies=[Depends(get_current_user)])
-    app.include_router(acl_user.router, prefix="/api", tags=["ACL User"], dependencies=[Depends(get_current_user)])
-    app.include_router(tenant.router, prefix="/api", tags=["Tenant"], dependencies=[Depends(get_current_user)])
+    application.include_router(lun.router, tags=["LUN"], dependencies=[Depends(get_current_user)], prefix="/api")
+    application.include_router(pool.router, tags=["Pool"], dependencies=[Depends(get_current_user)], prefix="/api")
+    application.include_router(
+        pool_unit.router, tags=["Pool Unit"], dependencies=[Depends(get_current_user)], prefix="/api"
+    )
+    application.include_router(
+        disk_group.router, tags=["Disk Group"], dependencies=[Depends(get_current_user)], prefix="/api"
+    )
+    application.include_router(disk.router, tags=["Disk"], dependencies=[Depends(get_current_user)], prefix="/api")
+    application.include_router(
+        nas_server.router, tags=["NAS Server"], dependencies=[Depends(get_current_user)], prefix="/api"
+    )
+    application.include_router(job.router, tags=["Job"], dependencies=[Depends(get_current_user)], prefix="/api")
 
-    return app
+    application.include_router(user.router, tags=["User"], dependencies=[Depends(get_current_user)], prefix="/api")
+    application.include_router(system_info.router, tags=["System Info"], prefix="/api")
+    application.include_router(
+        cifs_server.router, tags=["CIFS Server"], dependencies=[Depends(get_current_user)], prefix="/api"
+    )
+    application.include_router(
+        nfs_share.router, tags=["NFS Share"], dependencies=[Depends(get_current_user)], prefix="/api"
+    )
+    application.include_router(
+        nfs_share.router, tags=["NFS Share"], dependencies=[Depends(get_current_user)], prefix="/api"
+    )
+    application.include_router(
+        quota.router, tags=["Quota Management"], dependencies=[Depends(get_current_user)], prefix="/api"
+    )
+    application.include_router(
+        acl_user.router, tags=["ACL User"], dependencies=[Depends(get_current_user)], prefix="/api"
+    )
+    application.include_router(tenant.router, tags=["Tenant"], dependencies=[Depends(get_current_user)], prefix="/api")
+
+    return application
 
 
 app = create_application()
 
 
 if __name__ == "__main__":
+    import traceback
+
     import uvicorn
 
     # Get port from environment variable or use default

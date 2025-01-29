@@ -1,8 +1,10 @@
-from typing import List
+from typing import Dict, List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 
 from dell_unisphere_mock_api.core.auth import get_current_user
+from dell_unisphere_mock_api.core.response import UnityResponseFormatter
 from dell_unisphere_mock_api.models.disk_group import DiskGroupModel
 from dell_unisphere_mock_api.schemas.disk_group import DiskGroup, DiskGroupCreate, DiskGroupUpdate
 
@@ -12,10 +14,11 @@ disk_group_model = DiskGroupModel()
 
 @router.post(
     "/types/diskGroup/instances",
-    response_model=DiskGroup,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_disk_group(disk_group: DiskGroupCreate, current_user: dict = Depends(get_current_user)):
+async def create_disk_group(
+    request: Request, disk_group: DiskGroupCreate, current_user: dict = Depends(get_current_user)
+):
     """Create a new disk group."""
     # Validate RAID configuration
     if not disk_group_model.validate_raid_config(
@@ -25,35 +28,42 @@ async def create_disk_group(disk_group: DiskGroupCreate, current_user: dict = De
             status_code=400,
             detail="Invalid RAID configuration for the given stripe width and number of disks",
         )
-    return disk_group_model.create(disk_group.model_dump())
+    result = disk_group_model.create(disk_group.model_dump())
+    formatter = UnityResponseFormatter(request)
+    return formatter.format_collection([result["entries"][0]["content"]])
 
 
-@router.get("/types/diskGroup/instances", response_model=List[DiskGroup])
-async def list_disk_groups(current_user: dict = Depends(get_current_user)):
+@router.get("/types/diskGroup/instances")
+async def list_disk_groups(request: Request, current_user: dict = Depends(get_current_user)):
     """List all disk groups."""
-    return disk_group_model.list()
+    result = disk_group_model.list()
+    formatter = UnityResponseFormatter(request)
+    return formatter.format_collection([entry["content"] for entry in result["entries"]])
 
 
-@router.get("/types/diskGroup/instances/{disk_group_id}", response_model=DiskGroup)
-async def get_disk_group(disk_group_id: str, current_user: dict = Depends(get_current_user)):
+@router.get("/types/diskGroup/instances/{disk_group_id}")
+async def get_disk_group(request: Request, disk_group_id: str, current_user: dict = Depends(get_current_user)):
     """Get a specific disk group by ID."""
-    disk_group = disk_group_model.get(disk_group_id)
-    if not disk_group:
+    result = disk_group_model.get(disk_group_id)
+    if not result["entries"]:
         raise HTTPException(status_code=404, detail="Disk group not found")
-    return disk_group
+    formatter = UnityResponseFormatter(request)
+    return formatter.format_collection([result["entries"][0]["content"]])
 
 
-@router.patch("/types/diskGroup/instances/{disk_group_id}", response_model=DiskGroup)
+@router.patch("/types/diskGroup/instances/{disk_group_id}")
 async def update_disk_group(
+    request: Request,
     disk_group_id: str,
     disk_group: DiskGroupUpdate,
     current_user: dict = Depends(get_current_user),
 ):
     """Update a disk group."""
-    updated_disk_group = disk_group_model.update(disk_group_id, disk_group.model_dump(exclude_unset=True))
-    if not updated_disk_group:
+    result = disk_group_model.update(disk_group_id, disk_group.model_dump(exclude_unset=True))
+    if not result["entries"]:
         raise HTTPException(status_code=404, detail="Disk group not found")
-    return updated_disk_group
+    formatter = UnityResponseFormatter(request)
+    return formatter.format_collection([result["entries"][0]["content"]])
 
 
 @router.delete("/types/diskGroup/instances/{disk_group_id}", status_code=status.HTTP_204_NO_CONTENT)

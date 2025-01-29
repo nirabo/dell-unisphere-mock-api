@@ -16,13 +16,27 @@ class ResponseHeaderMiddleware(BaseHTTPMiddleware):
         self._csrf_tokens[session_id] = token
         return token
 
+    def _get_session_id(self, request: Request) -> str:
+        """Get session ID from cookie or generate a new one."""
+        cookie = request.cookies.get("mod_sec_emc", "")
+        if cookie:
+            # Extract session ID from cookie (format: value3&1&value1&session_id&value2&value)
+            parts = cookie.split("&")
+            if len(parts) >= 4:
+                return parts[3]
+        return secrets.token_urlsafe(32)
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         response = await call_next(request)
 
-        # Generate session ID and CSRF token for new sessions
-        if request.method == "GET" and "Authorization" in request.headers:
-            session_id = secrets.token_urlsafe(32)
-            csrf_token = self._generate_csrf_token(session_id)
+        # Generate session ID and CSRF token for new sessions or auth requests
+        if ("Authorization" in request.headers and request.method == "GET") or (
+            request.method == "POST" and request.url.path == "/api/auth"
+        ):
+            session_id = self._get_session_id(request)
+            csrf_token = self._csrf_tokens.get(session_id)
+            if csrf_token is None:
+                csrf_token = self._generate_csrf_token(session_id)
 
             # Generate secure cookie value (mocking Dell Unity's format)
             cookie_value = f"value3&1&value1&{session_id}&value2&{secrets.token_hex(32)}"

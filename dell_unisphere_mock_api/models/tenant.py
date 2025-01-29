@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, conint, validator
+from pydantic import BaseModel, Field, conint, field_validator
 
 
 class Host(BaseModel):
@@ -20,7 +20,7 @@ class TenantBase(BaseModel):
     networks: Optional[List[str]] = Field(default=[], description="Networks assigned to the tenant")
     is_enabled: Optional[bool] = Field(default=True, description="Whether the tenant is enabled")
 
-    @validator("vlans")
+    @field_validator("vlans")
     def validate_vlans(cls, v):
         if len(v) > 32:
             raise ValueError("Maximum of 32 VLANs allowed per tenant")
@@ -42,7 +42,7 @@ class TenantUpdate(BaseModel):
     networks: Optional[List[str]] = Field(None, description="Networks assigned to the tenant")
     is_enabled: Optional[bool] = Field(None, description="Whether the tenant is enabled")
 
-    @validator("vlans")
+    @field_validator("vlans")
     def validate_vlans(cls, v):
         if v is not None and len(v) > 32:
             raise ValueError("Maximum of 32 VLANs allowed per tenant")

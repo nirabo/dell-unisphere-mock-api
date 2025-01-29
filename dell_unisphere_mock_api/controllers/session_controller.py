@@ -41,7 +41,7 @@ class SessionController:
         self.sessions[session_id] = session
         return session
 
-    def get_session(self, session_id: str, request: Request) -> ApiResponse:
+    async def get_session(self, session_id: str, request: Request) -> ApiResponse:
         """Get a session by its ID."""
         session = self.sessions.get(session_id)
         if not session:
@@ -52,20 +52,22 @@ class SessionController:
             raise HTTPException(status_code=401, detail="Session expired")
 
         formatter = UnityResponseFormatter(request)
-        return formatter.format_collection([session], entry_links={0: [{"rel": "self", "href": f"/{session_id}"}]})
+        return await formatter.format_collection(
+            [session], entry_links={0: [{"rel": "self", "href": f"/{session_id}"}]}
+        )
 
-    def get_all_sessions(self, request: Request) -> ApiResponse:
+    async def get_all_sessions(self, request: Request) -> ApiResponse:
         """Get all active sessions."""
         # Clean up expired sessions first
-        self._cleanup_expired_sessions()
+        await self._cleanup_expired_sessions()
 
         formatter = UnityResponseFormatter(request)
         sessions = list(self.sessions.values())
         entry_links = {i: [{"rel": "self", "href": f"/{session.id}"}] for i, session in enumerate(sessions)}
 
-        return formatter.format_collection(sessions, entry_links=entry_links)
+        return await formatter.format_collection(sessions, entry_links=entry_links)
 
-    def validate_session(self, session_id: str) -> bool:
+    async def validate_session(self, session_id: str) -> bool:
         """Validate if a session is still active."""
         session = self.sessions.get(session_id)
         if not session:
@@ -73,14 +75,14 @@ class SessionController:
 
         # Check if session has timed out
         if datetime.now(timezone.utc) - session.last_activity > timedelta(seconds=session.idleTimeout):
-            self.delete_session(session_id)
+            await self.delete_session(session_id)
             return False
 
         # Update last activity
         session.last_activity = datetime.now(timezone.utc)
         return True
 
-    def _cleanup_expired_sessions(self) -> None:
+    async def _cleanup_expired_sessions(self) -> None:
         """Remove expired sessions."""
         now = datetime.now(timezone.utc)
         expired = [
@@ -89,14 +91,14 @@ class SessionController:
             if now - session.last_activity > timedelta(seconds=session.idleTimeout)
         ]
         for session_id in expired:
-            self.delete_session(session_id)
+            await self.delete_session(session_id)
 
-    def delete_session(self, session_id: str) -> None:
+    async def delete_session(self, session_id: str) -> None:
         """Delete a session."""
         if session_id in self.sessions:
             del self.sessions[session_id]
 
-    def logout(self, username: str, localCleanupOnly: bool = True) -> LogoutResponse:
+    async def logout(self, username: str, localCleanupOnly: bool = True) -> LogoutResponse:
         """Logout from a session or all sessions."""
         if localCleanupOnly:
             # Find and remove session for this user

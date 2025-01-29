@@ -54,7 +54,8 @@ def test_create_job(sample_job_data, auth_headers):
         cookies=cookies,
     )
     assert response.status_code == 202
-    assert "id" in response.json()
+    assert "entries" in response.json()
+    assert "id" in response.json()["entries"][0]["content"]
 
 
 def test_get_job(sample_job_data, auth_headers):
@@ -65,7 +66,7 @@ def test_get_job(sample_job_data, auth_headers):
         headers=headers,
         cookies=cookies,
     )
-    job_id = create_response.json()["id"]
+    job_id = create_response.json()["entries"][0]["content"]["id"]
 
     response = client.get(
         f"/api/types/job/instances/{job_id}",
@@ -73,25 +74,28 @@ def test_get_job(sample_job_data, auth_headers):
         cookies=cookies,
     )
     assert response.status_code == 200
-    assert response.json()["id"] == job_id
+    assert response.json()["entries"][0]["content"]["id"] == job_id
 
 
 def test_list_jobs(sample_job_data, auth_headers):
     headers, cookies = auth_headers
-    client.post(
+    # Create a job first
+    create_response = client.post(
         "/api/types/job/instances",
         json=sample_job_data.model_dump(),
         headers=headers,
         cookies=cookies,
     )
+    assert create_response.status_code == 202
+    job_id = create_response.json()["entries"][0]["content"]["id"]
 
-    response = client.get(
-        "/api/types/job/instances",
-        headers=headers,
-        cookies=cookies,
-    )
+    # List jobs
+    response = client.get("/api/types/job/instances", headers=headers, cookies=cookies)
     assert response.status_code == 200
-    assert len(response.json()["entries"]) > 0
+    assert "@base" in response.json()
+    assert "entries" in response.json()
+    assert len(response.json()["entries"]) >= 1
+    assert any(entry["content"]["id"] == job_id for entry in response.json()["entries"])
 
 
 def test_delete_job(sample_job_data, auth_headers):
@@ -102,18 +106,18 @@ def test_delete_job(sample_job_data, auth_headers):
         headers=headers,
         cookies=cookies,
     )
-    job_id = create_response.json()["id"]
+    assert create_response.status_code == 202
+    job_id = create_response.json()["entries"][0]["content"]["id"]
 
-    response = client.delete(
-        f"/api/types/job/instances/{job_id}",
-        headers=headers,
-        cookies=cookies,
-    )
-    assert response.status_code == 204
+    # Get the job
+    get_response = client.get(f"/api/types/job/instances/{job_id}", headers=headers, cookies=cookies)
+    assert get_response.status_code == 200
+    assert get_response.json()["entries"][0]["content"]["id"] == job_id
 
-    get_response = client.get(
-        f"/api/types/job/instances/{job_id}",
-        headers=headers,
-        cookies=cookies,
-    )
+    # Delete the job
+    delete_response = client.delete(f"/api/types/job/instances/{job_id}", headers=headers, cookies=cookies)
+    assert delete_response.status_code == 204
+
+    # Verify job is deleted
+    get_response = client.get(f"/api/types/job/instances/{job_id}", headers=headers, cookies=cookies)
     assert get_response.status_code == 404

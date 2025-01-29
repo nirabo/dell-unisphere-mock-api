@@ -1,17 +1,21 @@
 from datetime import datetime, timezone
 from typing import Dict, List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from dell_unisphere_mock_api.core.auth import get_current_user
-from dell_unisphere_mock_api.models.storage_resource import StorageResourceModel
+from dell_unisphere_mock_api.core.response import UnityResponseFormatter
+from dell_unisphere_mock_api.core.response_models import ApiResponse
+from dell_unisphere_mock_api.models.storage_resource import StorageResourceModel, StorageResourceResponse
 
 router = APIRouter()
 storage_resource_model = StorageResourceModel()
 
 
-@router.post("/types/storageResource/instances", status_code=201)
-async def create_storage_resource(resource_data: dict, current_user: dict = Depends(get_current_user)) -> dict:
+@router.post("/types/storageResource/instances", response_model=ApiResponse[StorageResourceResponse], status_code=201)
+async def create_storage_resource(
+    resource_data: dict, request: Request, response: Response, current_user: dict = Depends(get_current_user)
+) -> ApiResponse[StorageResourceResponse]:
     """Create a new storage resource instance."""
     if not current_user:
         raise HTTPException(
@@ -22,168 +26,195 @@ async def create_storage_resource(resource_data: dict, current_user: dict = Depe
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to create storage resources")
 
-    return storage_resource_model.create_storage_resource(resource_data)
+    response.headers["Accept"] = "application/json"
+    response.headers["Content-Type"] = "application/json"
+
+    resource = storage_resource_model.create_storage_resource(resource_data)
+    formatter = UnityResponseFormatter(request)
+    return await formatter.format_collection([resource])
 
 
-@router.get("/types/storageResource/instances")
+@router.get("/types/storageResource/instances", response_model=ApiResponse[StorageResourceResponse])
 async def list_storage_resources(
+    request: Request,
+    response: Response,
     current_user: dict = Depends(get_current_user),
-) -> List[dict]:
+) -> ApiResponse[StorageResourceResponse]:
     """List all storage resource instances."""
-    return storage_resource_model.list_storage_resources()
+    response.headers["Accept"] = "application/json"
+    response.headers["Content-Type"] = "application/json"
+
+    resources = storage_resource_model.list_storage_resources()
+    formatter = UnityResponseFormatter(request)
+    return await formatter.format_collection(resources)
 
 
-@router.get("/types/storageResource/instances/{resource_id}")
-async def get_storage_resource(resource_id: str, current_user: dict = Depends(get_current_user)) -> dict:
+@router.get("/instances/storageResource/{resource_id}", response_model=ApiResponse[StorageResourceResponse])
+async def get_storage_resource(
+    resource_id: str, request: Request, response: Response, current_user: dict = Depends(get_current_user)
+) -> ApiResponse[StorageResourceResponse]:
     """Get a specific storage resource instance by ID."""
+    response.headers["Accept"] = "application/json"
+    response.headers["Content-Type"] = "application/json"
+
     resource = storage_resource_model.get_storage_resource(resource_id)
     if not resource:
         raise HTTPException(status_code=404, detail="Storage resource not found")
-    return resource
+
+    formatter = UnityResponseFormatter(request)
+    return await formatter.format_collection([resource])
 
 
-@router.patch("/types/storageResource/instances/{resource_id}")
+@router.patch("/instances/storageResource/{resource_id}", response_model=ApiResponse[StorageResourceResponse])
 async def update_storage_resource(
-    resource_id: str, update_data: dict, current_user: dict = Depends(get_current_user)
-) -> dict:
+    resource_id: str,
+    update_data: dict,
+    request: Request,
+    response: Response,
+    current_user: dict = Depends(get_current_user),
+) -> ApiResponse[StorageResourceResponse]:
     """Update a specific storage resource instance."""
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to update storage resources")
 
+    response.headers["Accept"] = "application/json"
+    response.headers["Content-Type"] = "application/json"
+
     resource = storage_resource_model.update_storage_resource(resource_id, update_data)
     if not resource:
         raise HTTPException(status_code=404, detail="Storage resource not found")
-    return resource
+
+    formatter = UnityResponseFormatter(request)
+    return await formatter.format_collection([resource])
 
 
-@router.delete("/types/storageResource/instances/{resource_id}")
-async def delete_storage_resource(resource_id: str, current_user: dict = Depends(get_current_user)) -> dict:
+@router.delete("/instances/storageResource/{resource_id}", response_model=ApiResponse[StorageResourceResponse])
+async def delete_storage_resource(
+    resource_id: str, request: Request, response: Response, current_user: dict = Depends(get_current_user)
+) -> ApiResponse[StorageResourceResponse]:
     """Delete a specific storage resource instance."""
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to delete storage resources")
 
-    success = storage_resource_model.delete_storage_resource(resource_id)
-    if not success:
+    response.headers["Accept"] = "application/json"
+    response.headers["Content-Type"] = "application/json"
+
+    resource = storage_resource_model.delete_storage_resource(resource_id)
+    if not resource:
         raise HTTPException(status_code=404, detail="Storage resource not found")
-    return {"message": "Storage resource deleted successfully"}
+
+    formatter = UnityResponseFormatter(request)
+    return await formatter.format_collection([resource])
 
 
-@router.post("/types/storageResource/instances/{resource_id}/action/modifyHostAccess")
+@router.post(
+    "/instances/storageResource/{resource_id}/action/modifyHostAccess",
+    response_model=ApiResponse[StorageResourceResponse],
+)
 async def modify_host_access(
-    resource_id: str, host_access: dict, current_user: dict = Depends(get_current_user)
-) -> dict:
+    resource_id: str,
+    host_access: dict,
+    request: Request,
+    response: Response,
+    current_user: dict = Depends(get_current_user),
+) -> ApiResponse[StorageResourceResponse]:
     """Modify host access for a storage resource."""
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to modify host access")
 
-    # Get the resource first to check it exists
-    resource = storage_resource_model.get_storage_resource(resource_id)
+    response.headers["Accept"] = "application/json"
+    response.headers["Content-Type"] = "application/json"
+
+    resource = storage_resource_model.modify_host_access(resource_id, host_access)
     if not resource:
         raise HTTPException(status_code=404, detail="Storage resource not found")
 
-    # Update host access
-    success = storage_resource_model.update_host_access(
-        resource_id=resource_id,
-        host_id=host_access["host"],
-        access_type=host_access["accessType"],
-    )
-
-    if not success:
-        raise HTTPException(status_code=400, detail="Failed to update host access")
-
-    return storage_resource_model.get_storage_resource(resource_id)
+    formatter = UnityResponseFormatter(request)
+    return await formatter.format_collection([resource])
 
 
-@router.post("/types/storageResource/action/createLun")
-async def create_lun(lun_data: dict, current_user: dict = Depends(get_current_user)) -> dict:
+@router.post("/types/storageResource/action/createLun", response_model=ApiResponse[StorageResourceResponse])
+async def create_lun(
+    lun_data: dict, request: Request, response: Response, current_user: dict = Depends(get_current_user)
+) -> ApiResponse[StorageResourceResponse]:
     """Create a new LUN storage resource."""
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to create LUNs")
 
-    # Validate required fields
-    if "name" not in lun_data or "lunParameters" not in lun_data:
-        raise HTTPException(status_code=400, detail="Missing required fields: name and lunParameters")
+    response.headers["Accept"] = "application/json"
+    response.headers["Content-Type"] = "application/json"
 
-    if "pool" not in lun_data["lunParameters"] or "size" not in lun_data["lunParameters"]:
-        raise HTTPException(status_code=400, detail="Missing required lunParameters: pool and size")
-
-    # Create LUN with type "lun"
-    lun_data["type"] = "lun"
-    lun_data["sizeTotal"] = int(lun_data["lunParameters"]["size"])  # Set the size from lunParameters
-    resource = storage_resource_model.create_storage_resource(lun_data)
-
-    return {
-        "@base": "https://unisphere/api/types/storageResource/action/createLun",
-        "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
-        "links": [{"rel": "self", "href": f"/{resource['id']}"}],
-        "content": {"storageResource": {"id": resource["id"]}},
-    }
+    resource = storage_resource_model.create_lun(lun_data)
+    formatter = UnityResponseFormatter(request)
+    return await formatter.format_collection([resource])
 
 
-@router.post("/types/storageResource/{resource_id}/action/modifyLun")
-async def modify_lun(resource_id: str, lun_data: dict, current_user: dict = Depends(get_current_user)) -> dict:
+@router.post(
+    "/instances/storageResource/{resource_id}/action/modifyLun", response_model=ApiResponse[StorageResourceResponse]
+)
+async def modify_lun(
+    resource_id: str,
+    lun_data: dict,
+    request: Request,
+    response: Response,
+    current_user: dict = Depends(get_current_user),
+) -> ApiResponse[StorageResourceResponse]:
     """Modify an existing LUN storage resource."""
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to modify LUNs")
 
-    resource = storage_resource_model.get_storage_resource(resource_id)
+    response.headers["Accept"] = "application/json"
+    response.headers["Content-Type"] = "application/json"
+
+    resource = storage_resource_model.modify_lun(resource_id, lun_data)
     if not resource:
         raise HTTPException(status_code=404, detail="Storage resource not found")
 
-    if resource["type"] != "lun":
-        raise HTTPException(status_code=400, detail="Storage resource is not a LUN")
-
-    # Update LUN properties
-    update_data = {}
-    if "description" in lun_data:
-        update_data["description"] = lun_data["description"]
-    if "lunParameters" in lun_data and "size" in lun_data["lunParameters"]:
-        update_data["sizeTotal"] = lun_data["lunParameters"]["size"]
-
-    storage_resource_model.update_storage_resource(resource_id, update_data)
-    return {"status": "success"}
+    formatter = UnityResponseFormatter(request)
+    return await formatter.format_collection([resource])
 
 
-@router.post("/types/storageResource/{resource_id}/action/expandLun")
-async def expand_lun(resource_id: str, expand_data: dict, current_user: dict = Depends(get_current_user)) -> dict:
+@router.post(
+    "/instances/storageResource/{resource_id}/action/expand", response_model=ApiResponse[StorageResourceResponse]
+)
+async def expand_lun(
+    resource_id: str,
+    expand_data: dict,
+    request: Request,
+    response: Response,
+    current_user: dict = Depends(get_current_user),
+) -> ApiResponse[StorageResourceResponse]:
     """Expand an existing LUN storage resource."""
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to expand LUNs")
 
-    resource = storage_resource_model.get_storage_resource(resource_id)
+    response.headers["Accept"] = "application/json"
+    response.headers["Content-Type"] = "application/json"
+
+    resource = storage_resource_model.expand_lun(resource_id, expand_data)
     if not resource:
         raise HTTPException(status_code=404, detail="Storage resource not found")
 
-    if resource["type"] != "lun":
-        raise HTTPException(status_code=400, detail="Storage resource is not a LUN")
-
-    if "size" not in expand_data:
-        raise HTTPException(status_code=400, detail="Missing required field: size")
-
-    # Ensure new size is larger than current size
-    try:
-        current_size = int(resource["sizeTotal"])  # Ensure we have integers
-        new_size = int(expand_data["size"])
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=400, detail="Invalid size value")
-
-    if new_size <= current_size:
-        raise HTTPException(
-            status_code=400, detail=f"New size ({new_size}) must be larger than current size ({current_size})"
-        )
-
-    # Update the LUN size
-    storage_resource_model.update_storage_resource(resource_id, {"sizeTotal": new_size})
-    return {"status": "success"}
+    formatter = UnityResponseFormatter(request)
+    return await formatter.format_collection([resource])
 
 
-@router.post("/types/storageResource/{resource_id}/action/delete")
-async def delete_storage_resource_action(resource_id: str, current_user: dict = Depends(get_current_user)) -> dict:
+@router.post(
+    "/instances/storageResource/{resource_id}/action/delete", response_model=ApiResponse[StorageResourceResponse]
+)
+async def delete_storage_resource_action(
+    resource_id: str, request: Request, response: Response, current_user: dict = Depends(get_current_user)
+) -> ApiResponse[StorageResourceResponse]:
     """Delete a storage resource via action endpoint."""
     if current_user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to delete storage resources")
 
-    success = storage_resource_model.delete_storage_resource(resource_id)
-    if not success:
+    response.headers["Accept"] = "application/json"
+    response.headers["Content-Type"] = "application/json"
+
+    resource = storage_resource_model.delete_storage_resource(resource_id)
+    if not resource:
         raise HTTPException(status_code=404, detail="Storage resource not found")
-    return {"status": "success"}
+
+    formatter = UnityResponseFormatter(request)
+    return await formatter.format_collection([resource])

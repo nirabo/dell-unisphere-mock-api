@@ -1,141 +1,70 @@
 from datetime import datetime, timezone
-from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
+from typing import Any, Dict, List, Optional, TypeVar
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request
+from pydantic import BaseModel
 
-from .response_models import ApiResponse, Entry, ErrorDetail, Link
+from dell_unisphere_mock_api.core.response_models import ApiResponse, Entry, ErrorDetail, Link
 
-T = TypeVar("T")
+T = TypeVar("T", bound=BaseModel)
 
 
-class UnityResponseFormatter(Generic[T]):
+class UnityResponseFormatter:
+    """Formatter for Unity API responses."""
+
     def __init__(self, request: Request):
-        self.base_url = str(request.base_url).rstrip("/")
-        self.path = request.url.path
+        self.request = request
 
-    def format_collection(
+    async def format_collection(
         self,
-        data: List[T],
-        pagination: Optional[dict] = None,
-        entry_links: Optional[Dict[int, List[Link]]] = None,
-        entry_metadata: Optional[Dict[int, Dict[str, Any]]] = None,
-        response_metadata: Optional[Dict[str, Any]] = None,
+        items: List[T],
+        entry_links: Optional[Dict[int, List[Dict[str, str]]]] = None,
     ) -> ApiResponse[T]:
-        """Format a collection response according to Unity REST API spec.
-
-        Args:
-            data: List of items to include in the response
-            pagination: Optional pagination information (page, total_pages, total)
-            entry_links: Optional dict mapping entry index to list of links for that entry
-            entry_metadata: Optional dict mapping entry index to metadata for that entry
-            response_metadata: Optional metadata to include in the response
-        """
-        base = f"{self.base_url}{self.path}"
-        current_time = datetime.now(timezone.utc)
-
-        # Create Entry objects for each item
+        """Format a collection of items into a Unity API response."""
         entries = []
-        for idx, item in enumerate(data):
-            entry_links_list = entry_links.get(idx, []) if entry_links else []
-            entry_metadata_dict = entry_metadata.get(idx) if entry_metadata else None
+        current_time = datetime.now(timezone.utc)
+        base = str(self.request.base_url)[:-1] + self.request.url.path
 
-            entries.append(
-                Entry[T](
-                    base=base, content=item, links=entry_links_list, updated=current_time, metadata=entry_metadata_dict
-                )
-            )
+        for i, item in enumerate(items):
+            links = []
+            if entry_links and i in entry_links:
+                for link_data in entry_links[i]:
+                    links.append(Link(rel=link_data["rel"], href=link_data["href"]))
 
-        # Build response links
-        links = []
-        if pagination:
-            links.extend(self._build_pagination_links(pagination))
+            entry = Entry[T](base=base, content=item, links=links, updated=current_time, metadata=None)
+            entries.append(entry)
 
-        # Create the full response
-        response = ApiResponse[T](
-            base=base,
-            updated=current_time,
-            entries=entries,
-            links=links,
-            total=pagination.get("total", len(data)) if pagination else len(data),
-            metadata=response_metadata,
+        return ApiResponse[T](
+            base=base, updated=current_time, links=[], entries=entries, total=len(items), metadata=None
         )
 
-        return response
-
-    def format_error(
+    async def format_item(
         self,
-        error: Union[HTTPException, Exception],
-        error_code: Optional[int] = None,
-        error_messages: Optional[List[Dict[str, Any]]] = None,
-    ) -> ErrorDetail:
-        """Format an error response according to Unity REST API spec."""
-        if isinstance(error, HTTPException):
-            status_code = error.status_code
-            messages = [error.detail]
-        else:
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-            messages = [str(error)]
+        item: T,
+        links: Optional[List[Dict[str, str]]] = None,
+    ) -> ApiResponse[T]:
+        """Format a single item into a Unity API response."""
+        current_time = datetime.now(timezone.utc)
+        base = str(self.request.base_url)[:-1] + self.request.url.path
+        entry_links = []
+        if links:
+            for link_data in links:
+                entry_links.append(Link(rel=link_data["rel"], href=link_data["href"]))
 
-        if error_code is None:
-            error_code = status_code
+        entry = Entry[T](base=base, content=item, links=entry_links, updated=current_time, metadata=None)
+        return ApiResponse[T](base=base, updated=current_time, links=[], entries=[entry], total=1, metadata=None)
 
-        return ErrorDetail(
-            errorCode=error_code,
-            httpStatusCode=status_code,
+    async def format_error(
+        self,
+        error_code: int,
+        http_status_code: int,
+        messages: List[str],
+    ) -> Dict[str, Any]:
+        """Format an error response."""
+        error = ErrorDetail(
+            error_code=error_code,
+            http_status_code=http_status_code,
             messages=messages,
             created=datetime.now(timezone.utc),
-            errorMessages=error_messages,
         )
-
-    def _build_pagination_links(self, pagination: dict) -> List[Link]:
-        """Create pagination links according to Unity spec."""
-        links = []
-        current_page = pagination["page"]
-        total_pages = pagination["total_pages"]
-
-        # First page link
-        links.append(Link(rel="first", href=f"{self.base_url}{self.path}?page=1"))
-
-        # Previous page link
-        if current_page > 1:
-            links.append(Link(rel="previous", href=f"{self.base_url}{self.path}?page={current_page - 1}"))
-
-        # Next page link
-        if current_page < total_pages:
-            links.append(Link(rel="next", href=f"{self.base_url}{self.path}?page={current_page + 1}"))
-
-        # Last page link
-        links.append(Link(rel="last", href=f"{self.base_url}{self.path}?page={total_pages}"))
-
-        return links
-
-    def format_response(
-        self,
-        content: T,
-        resource_type: str,
-        resource_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> ApiResponse[T]:
-        """Format a single resource response according to Unity REST API spec.
-
-        Args:
-            content: The resource content
-            resource_type: Type of the resource (e.g., 'filesystem', 'lun')
-            resource_id: Optional ID of the resource
-            metadata: Optional metadata to include in the response
-        """
-        base = f"{self.base_url}{self.path}"
-        current_time = datetime.now(timezone.utc)
-
-        # Create links for the resource
-        links = []
-        if resource_id:
-            links.append(Link(rel="self", href=f"/{resource_id}"))
-
-        # Create the entry
-        entry = Entry[T](base=base, content=content, links=links, updated=current_time, metadata=metadata)
-
-        # Create the full response
-        response = ApiResponse[T](base=base, updated=current_time, entries=[entry], links=[], total=1, metadata=None)
-
-        return response
+        return error.model_dump(by_alias=True)

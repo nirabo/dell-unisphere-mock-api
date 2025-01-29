@@ -87,9 +87,11 @@ def auth_headers(test_client):
         "Content-Type": "application/json",
     }
 
-    # Make a GET request to get CSRF token
-    response = test_client.get("/api/types/user/instances", headers=base_headers)
+    # Make a GET request to get CSRF token - any GET request with basic auth should work
+    response = test_client.get("/types/user/instances", headers=base_headers)
     csrf_token = response.headers.get("EMC-CSRF-TOKEN")
+    if not csrf_token:
+        raise RuntimeError("Failed to get CSRF token from response headers")
 
     # Create headers with CSRF token for mutating requests
     headers_with_csrf = base_headers.copy()

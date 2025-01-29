@@ -1,50 +1,49 @@
 from datetime import datetime
 from typing import Any, Dict, Generic, List, Optional, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-T = TypeVar("T")
+T = TypeVar("T", bound=BaseModel)
 
 
 class Link(BaseModel):
+    """Link model for HATEOAS (Hypermedia as the Engine of Application State)"""
+
     rel: str
     href: str
 
 
 class Entry(BaseModel, Generic[T]):
+    """Entry model for Unity API responses."""
+
     base: str = Field(alias="@base")
     content: T
-    links: List[Link]
+    links: List[Link] = []
     updated: datetime
     metadata: Optional[Dict[str, Any]] = None
 
-    class Config:
-        populate_by_name = True
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(populate_by_name=True, json_encoders={datetime: lambda v: v.isoformat()})
 
 
 class ApiResponse(BaseModel, Generic[T]):
+    """Base response model for Unity API."""
+
     base: str = Field(alias="@base")
     updated: datetime
     links: List[Link]
     entries: List[Entry[T]]
-    total: Optional[int] = None
+    total: int
     metadata: Optional[Dict[str, Any]] = None
 
-    class Config:
-        populate_by_name = True
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(populate_by_name=True, json_encoders={datetime: lambda v: v.isoformat()})
 
 
 class ErrorDetail(BaseModel):
-    """Detailed error information following Unity API error format."""
+    """Error detail model for Unity API error responses."""
 
     error_code: int = Field(alias="errorCode")
     http_status_code: int = Field(alias="httpStatusCode")
     messages: List[str]
-    created: datetime
-    error_messages: Optional[List[Dict[str, Any]]] = Field(default=None, alias="errorMessages")
+    created: datetime = Field(default_factory=lambda: datetime.now())
 
-    class Config:
-        populate_by_name = True
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(populate_by_name=True, json_encoders={datetime: lambda v: v.isoformat()})

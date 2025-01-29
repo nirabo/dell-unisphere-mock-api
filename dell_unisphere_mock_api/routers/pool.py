@@ -1,12 +1,15 @@
+import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 
 from dell_unisphere_mock_api.controllers.pool_controller import PoolController
 from dell_unisphere_mock_api.core.auth import get_current_user
 from dell_unisphere_mock_api.core.config import settings
+from dell_unisphere_mock_api.core.response import UnityResponseFormatter
+from dell_unisphere_mock_api.core.response_models import ApiResponse
 from dell_unisphere_mock_api.schemas.pool import Pool, PoolAutoConfigurationResponse, PoolCreate, PoolUpdate
 
 router = APIRouter()
@@ -14,10 +17,10 @@ router = APIRouter()
 pool_controller = PoolController()
 
 
-@router.post("/types/pool/instances", response_model=Pool | dict, status_code=201)
+@router.post("/types/pool/instances", status_code=201)
 async def create_pool(
-    pool: PoolCreate, timeout: Optional[int] = Query(None), _: dict = Depends(get_current_user)
-) -> Pool | dict:
+    request: Request, pool: PoolCreate, timeout: Optional[int] = Query(None), _: dict = Depends(get_current_user)
+) -> ApiResponse[Pool]:
     """Create a new storage pool."""
     # If timeout=0, handle as async request
     if timeout == 0:
@@ -31,123 +34,80 @@ async def create_pool(
             tasks=[JobTask(name="CreatePool", object="pool", action="create", parametersIn=pool.model_dump())],
         )
         job = await job_controller.create_job(job_data)
-        return JSONResponse(status_code=202, content={"id": job.id})
+
+        # Create a proper Unity API response
+        formatter = UnityResponseFormatter(request)
+        response = formatter.format_collection(
+            [job], entry_links={0: [{"rel": "self", "href": f"/api/types/job/instances/{job.id}"}]}
+        )
+        return JSONResponse(status_code=202, content=response.model_dump(by_alias=True))
 
     # Handle synchronous request
-    return pool_controller.create_pool(pool)
+    response = await pool_controller.create_pool(pool, request)
+    # Get the pool ID from the response content
+    pool_id = response.entries[0].content.id if response.entries else None
+    # Add self link to the response
+    if pool_id:
+        response.entries[0].links = [{"rel": "self", "href": f"/api/types/pool/instances/{pool_id}"}]
+    # Use model_dump with exclude_none to properly handle datetime serialization
+    return JSONResponse(
+        status_code=201,
+        content=response.model_dump(by_alias=True, exclude_none=True),
+        headers={"Content-Type": "application/json"},
+    )
 
 
-@router.get("/instances/pool/name:{name}", response_model=Pool)
-async def get_pool_by_name(name: str, _: dict = Depends(get_current_user)) -> Pool:
+@router.get("/instances/pool/name:{name}")
+async def get_pool_by_name(request: Request, name: str, _: dict = Depends(get_current_user)) -> ApiResponse[Pool]:
     """Get a pool by name."""
-    pool = pool_controller.get_pool_by_name(name)
-    if not pool:
-        raise HTTPException(status_code=404, detail="Pool not found")
-    return pool
+    return await pool_controller.get_pool_by_name(name, request)
 
 
-@router.get("/instances/pool/{pool_id}", response_model=Pool)
-async def get_pool(pool_id: str, _: dict = Depends(get_current_user)) -> Pool:
+@router.get("/instances/pool/{pool_id}")
+async def get_pool(request: Request, pool_id: str, _: dict = Depends(get_current_user)) -> ApiResponse[Pool]:
     """Get a pool by ID."""
-    pool = pool_controller.get_pool(pool_id)
-    if not pool:
-        raise HTTPException(status_code=404, detail="Pool not found")
-    return pool
+    return await pool_controller.get_pool(pool_id, request)
 
 
 @router.get("/types/pool/instances")
 async def list_pools(
-    _: dict = Depends(get_current_user),
+    request: Request,
     compact: bool = Query(False),
     fields: Optional[str] = Query(None),
     page: Optional[int] = Query(1),
     per_page: Optional[int] = Query(2000),
     orderby: Optional[str] = Query(None),
-) -> JSONResponse:
+    _: dict = Depends(get_current_user),
+) -> ApiResponse[List[Pool]]:
     """List all pools with filtering and pagination."""
-    pools = pool_controller.list_pools()
-
-    # Apply sorting if specified
-    if orderby:
-        field, direction = orderby.split(" ") if " " in orderby else (orderby, "asc")
-        reverse = direction.lower() == "desc"
-        pools = sorted(pools, key=lambda x: getattr(x, field), reverse=reverse)
-
-    # Apply pagination
-    start_idx = (page - 1) * per_page
-    end_idx = start_idx + per_page
-    pools = pools[start_idx:end_idx]
-
-    # Format response according to fields parameter
-    if fields:
-        field_list = fields.split(",")
-        entries = []
-        for pool in pools:
-            content = {}
-            for field in field_list:
-                if hasattr(pool, field):
-                    value = getattr(pool, field)
-                    if isinstance(value, datetime):
-                        content[field] = value.isoformat()
-                    else:
-                        content[field] = value
-            entries.append({"content": content})
-    else:
-        # Use model_dump with custom datetime encoder
-        entries = []
-        for pool in pools:
-            pool_dict = pool.model_dump()
-            # Convert datetime objects to ISO format strings
-            for key, value in pool_dict.items():
-                if isinstance(value, datetime):
-                    pool_dict[key] = value.isoformat()
-            entries.append({"content": pool_dict})
-
-    response_data = {
-        "@base": f"{settings.API_BASE_URL}/types/pool/instances",
-        "updated": datetime.now(timezone.utc).isoformat(),
-        "links": [{"rel": "self", "href": f"&page={page}"}],
-        "entries": entries,
-    }
-
-    return JSONResponse(content=response_data)
+    return await pool_controller.list_pools(request, compact, fields, page, per_page, orderby)
 
 
-@router.patch("/instances/pool/{pool_id}", response_model=Pool)
-async def modify_pool(pool_id: str, pool_update: PoolUpdate, _: dict = Depends(get_current_user)) -> Pool:
+@router.patch("/instances/pool/{pool_id}")
+async def modify_pool(
+    request: Request, pool_id: str, pool_update: PoolUpdate, _: dict = Depends(get_current_user)
+) -> ApiResponse[Pool]:
     """Modify a pool."""
-    pool = pool_controller.update_pool(pool_id, pool_update)
-    if not pool:
-        raise HTTPException(status_code=404, detail="Pool not found")
-    return pool
+    return await pool_controller.update_pool(pool_id, pool_update, request)
 
 
 @router.delete("/instances/pool/name:{name}", status_code=204)
-async def delete_pool_by_name(name: str, _: dict = Depends(get_current_user)):
+async def delete_pool_by_name(request: Request, name: str, _: dict = Depends(get_current_user)) -> None:
     """Delete a pool by name."""
-    success = pool_controller.delete_pool_by_name(name)
-    if not success:
-        raise HTTPException(status_code=404, detail="Pool not found")
+    await pool_controller.delete_pool_by_name(name, request)
     return Response(status_code=204)
 
 
 @router.delete("/instances/pool/{pool_id}", status_code=204)
-async def delete_pool(pool_id: str, _: dict = Depends(get_current_user)):
+async def delete_pool(request: Request, pool_id: str, _: dict = Depends(get_current_user)) -> None:
     """Delete a pool."""
-    success = pool_controller.delete_pool(pool_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Pool not found")
+    await pool_controller.delete_pool(pool_id, request)
     return Response(status_code=204)
 
 
-@router.post("/types/pool/action/recommendAutoConfiguration", response_model=List[PoolAutoConfigurationResponse])
-async def recommend_auto_configuration(_: dict = Depends(get_current_user)) -> List[PoolAutoConfigurationResponse]:
+@router.get("/types/pool/action/recommendAutoConfiguration")
+async def recommend_auto_configuration(
+    request: Request, _: dict = Depends(get_current_user)
+) -> ApiResponse[PoolAutoConfigurationResponse]:
     """Get recommended pool configurations based on available drives."""
-    # Check if there are existing pools
-    pools = pool_controller.list_pools()
-    if pools:
-        raise HTTPException(
-            status_code=400, detail="Auto configuration is only available when no pools exist on the system"
-        )
-
-    return pool_controller.recommend_auto_configuration()
+    return await pool_controller.recommend_auto_configuration(request)
