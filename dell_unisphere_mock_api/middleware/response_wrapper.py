@@ -46,10 +46,7 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
                     # If UTF-8 fails, try to decode as latin1
                     response_body_str = response_body.decode("latin1")
 
-                if response_body_str:
-                    response_data = json.loads(response_body_str)
-                else:
-                    response_data = {}
+                response_data = json.loads(response_body_str) if response_body_str else {}
 
                 # Check if response is already an ApiResponse (has entries field) or ErrorDetail (has errorCode field)
                 if isinstance(response_data, dict) and ("entries" in response_data or "errorCode" in response_data):
@@ -89,8 +86,9 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
 
                 # Format as a collection response
                 formatted_response = await formatter.format_collection([response_data] if response_data else [])
-                content = formatted_response.model_dump(by_alias=True, exclude_none=True)
-                content = json.dumps(content, default=json_serial).encode("utf-8")
+                content = json.dumps(
+                    formatted_response.model_dump(by_alias=True, exclude_none=True), default=json_serial
+                ).encode("utf-8")
                 headers = dict(response.headers)
                 headers["content-length"] = str(len(content))
                 return Response(
@@ -100,22 +98,24 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
                     media_type="application/json",
                 )
 
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to decode JSON: {e}")
-                formatter = UnityResponseFormatter(request)
-                error_response = await formatter.format_error(
-                    error_code=400, http_status_code=400, messages=[f"Invalid JSON: {str(e)}"]
+            except json.JSONDecodeError:
+                # If response is not JSON, return it as-is
+                return Response(
+                    content=response_body,
+                    status_code=response.status_code,
+                    headers=response.headers,
+                    media_type=response.media_type,
                 )
-                content = json.dumps(error_response.model_dump(by_alias=True), default=json_serial).encode("utf-8")
-                headers = dict(response.headers)
-                headers["content-length"] = str(len(content))
-                return Response(content=content, status_code=400, headers=headers, media_type="application/json")
-
         except Exception as e:
             logger.error(f"Error in middleware: {e}")
-            error_response = await UnityResponseFormatter.format_error(
-                error_code=500, http_status_code=500, messages=[f"Internal server error: {str(e)}"]
+            return Response(
+                status_code=500,
+                content=json.dumps(
+                    {
+                        "errorCode": 500,
+                        "httpStatusCode": 500,
+                        "messages": [str(e)],
+                    }
+                ).encode("utf-8"),
+                media_type="application/json",
             )
-            content = json.dumps(error_response.model_dump(by_alias=True), default=json_serial).encode("utf-8")
-            headers = {"content-type": "application/json", "content-length": str(len(content))}
-            return Response(content=content, status_code=500, headers=headers, media_type="application/json")

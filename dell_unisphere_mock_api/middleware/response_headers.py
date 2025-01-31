@@ -137,8 +137,13 @@ class ResponseHeaderMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request and add required headers to response."""
-        # First validate CSRF token for mutating methods
-        if request.method in ["POST", "PATCH", "DELETE"]:
+        # Get or create session first
+        session = await self._get_or_create_session(request)
+        if isinstance(session, Response):
+            return session
+
+        # Then validate CSRF token for mutating methods if we have a session
+        if session and request.method in ["POST", "PATCH", "DELETE"]:
             csrf_token = request.headers.get("EMC-CSRF-TOKEN")
             if not csrf_token:
                 return Response(
@@ -150,9 +155,14 @@ class ResponseHeaderMiddleware(BaseHTTPMiddleware):
                     media_type="application/json",
                 )
 
-        session = await self._get_or_create_session(request)
-        if isinstance(session, Response):
-            return session
+            # Validate that the token matches
+            stored_token = self._csrf_tokens.get(session.id)
+            if not stored_token or stored_token != csrf_token:
+                return Response(
+                    status_code=401,
+                    content=('{"errorCode": 401, "httpStatusCode": 401, ' '"messages": ["Invalid EMC-CSRF-TOKEN"]}'),
+                    media_type="application/json",
+                )
 
         response = await call_next(request)
 
@@ -179,11 +189,10 @@ class ResponseHeaderMiddleware(BaseHTTPMiddleware):
             response.headers["Vary"] = "Accept-Encoding"
             response.headers["Content-Type"] = "application/json; version=1.0;charset=UTF-8"
 
-            # Set cookie with same expiry
+            # Set cookie
             response.set_cookie(
                 "mod_sec_emc",
                 cookie_value,
-                expires=expires,
                 httponly=True,
                 secure=True,
                 samesite="strict",

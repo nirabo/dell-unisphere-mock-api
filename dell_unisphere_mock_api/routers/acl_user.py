@@ -13,24 +13,24 @@ controller = ACLUserController()
 
 @router.post("/instances", response_model=ApiResponse)
 async def create_acl_user(user: ACLUserCreate, request: Request, _: str = Depends(get_current_user)):
-    return controller.create_user(request, user)
+    return await controller.create_user(request, user)
 
 
 @router.get("/instances", response_model=ApiResponse)
 async def list_acl_users(request: Request, _: str = Depends(get_current_user)):
-    return controller.list_users(request)
+    return await controller.list_users(request)
 
 
 @router.get("/instances/{user_id}", response_model=ApiResponse)
 async def get_acl_user(user_id: str, request: Request, _: str = Depends(get_current_user)):
-    return controller.get_user(request, user_id)
+    return await controller.get_user(request, user_id)
 
 
 @router.patch("/instances/{user_id}", response_model=ApiResponse)
 async def update_acl_user(
     user_id: str, update_data: ACLUserUpdate, request: Request, _: str = Depends(get_current_user)
 ):
-    return controller.update_user(request, user_id, update_data)
+    return await controller.update_user(request, user_id, update_data)
 
 
 @router.get("/action/lookupSIDByDomainUser", response_model=ApiResponse)
@@ -40,4 +40,4 @@ async def lookup_sid_by_domain_user(
     request: Request = None,
     _: str = Depends(get_current_user),
 ):
-    return controller.lookup_sid_by_domain_user(request, domain_name, user_name)
+    return await controller.lookup_sid_by_domain_user(request, domain_name, user_name)

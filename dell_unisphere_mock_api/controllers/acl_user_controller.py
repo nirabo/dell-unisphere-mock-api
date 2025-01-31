@@ -13,7 +13,7 @@ class ACLUserController:
     def __init__(self):
         self.users: dict[str, ACLUser] = {}
 
-    def create_user(self, request: Request, user_data: ACLUserCreate) -> ApiResponse[ACLUser]:
+    async def create_user(self, request: Request, user_data: ACLUserCreate) -> ApiResponse[ACLUser]:
         """Create a new ACL user."""
         user_id = str(uuid4())
         user = ACLUser(
@@ -27,54 +27,59 @@ class ACLUserController:
 
         self.users[user_id] = user
         formatter = UnityResponseFormatter(request)
-        return formatter.format_collection([user], entry_links={0: [{"rel": "self", "href": f"/{user_id}"}]})
+        return await formatter.format_collection([user], entry_links={0: [{"rel": "self", "href": f"/{user_id}"}]})
 
-    def get_user(self, request: Request, user_id: str) -> ApiResponse[ACLUser]:
+    async def get_user(self, request: Request, user_id: str) -> ApiResponse[ACLUser]:
         """Get an ACL user by ID."""
         user = self.users.get(user_id)
         if not user:
             raise HTTPException(status_code=404, detail=f"ACL user with ID '{user_id}' not found")
 
         formatter = UnityResponseFormatter(request)
-        return formatter.format_collection([user], entry_links={0: [{"rel": "self", "href": f"/{user_id}"}]})
+        return await formatter.format_collection([user], entry_links={0: [{"rel": "self", "href": f"/{user_id}"}]})
 
-    def list_users(self, request: Request) -> ApiResponse[ACLUser]:
+    async def list_users(self, request: Request) -> ApiResponse[ACLUser]:
         """List all ACL users."""
         users = list(self.users.values())
         formatter = UnityResponseFormatter(request)
         entry_links = {i: [{"rel": "self", "href": f"/{user.id}"}] for i, user in enumerate(users)}
-        return formatter.format_collection(users, entry_links=entry_links)
+        return await formatter.format_collection(users, entry_links=entry_links)
 
-    def update_user(self, request: Request, user_id: str, user_data: ACLUserUpdate) -> ApiResponse[ACLUser]:
+    async def update_user(self, request: Request, user_id: str, user_data: ACLUserUpdate) -> ApiResponse[ACLUser]:
         """Update an ACL user."""
         user = self.users.get(user_id)
         if not user:
             raise HTTPException(status_code=404, detail=f"ACL user with ID '{user_id}' not found")
 
-        # Update user fields
+        # Update only provided fields
         update_data = user_data.model_dump(exclude_unset=True)
-        user_dict = user.model_dump()
-        user_dict.update(update_data)
-        updated_user = ACLUser(**user_dict)
-        self.users[user_id] = updated_user
+        for field, value in update_data.items():
+            setattr(user, field, value)
 
         formatter = UnityResponseFormatter(request)
-        return formatter.format_collection([updated_user], entry_links={0: [{"rel": "self", "href": f"/{user_id}"}]})
+        return await formatter.format_collection([user], entry_links={0: [{"rel": "self", "href": f"/{user_id}"}]})
 
-    def delete_user(self, request: Request, user_id: str) -> ApiResponse[None]:
+    async def delete_user(self, request: Request, user_id: str) -> ApiResponse[None]:
         """Delete an ACL user."""
         if user_id not in self.users:
             raise HTTPException(status_code=404, detail=f"ACL user with ID '{user_id}' not found")
 
         del self.users[user_id]
         formatter = UnityResponseFormatter(request)
-        return formatter.format_collection([], entry_links={})
+        return await formatter.format_collection([], entry_links={})
 
-    def lookup_sid_by_domain_user(self, request: Request, domain: str, username: str) -> ApiResponse[ACLUser]:
-        """Look up an ACL user by domain and username."""
+    async def lookup_sid_by_domain_user(
+        self, request: Request, domain_name: str, user_name: str
+    ) -> ApiResponse[ACLUser]:
+        """Look up a user's SID by domain name and username."""
         for user in self.users.values():
-            if user.domain_name == domain and user.user_name == username:
+            if user.domain_name == domain_name and user.user_name == user_name:
                 formatter = UnityResponseFormatter(request)
-                return formatter.format_collection([user], entry_links={0: [{"rel": "self", "href": f"/{user.id}"}]})
+                return await formatter.format_collection(
+                    [user], entry_links={0: [{"rel": "self", "href": f"/{user.id}"}]}
+                )
 
-        raise HTTPException(status_code=404, detail=f"No user found for domain '{domain}' and username '{username}'")
+        raise HTTPException(
+            status_code=404,
+            detail=f"User '{user_name}' not found in domain '{domain_name}'",
+        )
