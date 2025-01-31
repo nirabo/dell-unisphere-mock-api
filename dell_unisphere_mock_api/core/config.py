@@ -1,5 +1,6 @@
 """Configuration settings for the Dell Unisphere Mock API."""
 
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -11,11 +12,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     CSRF_ENABLED: bool = False  # Default to False to disable CSRF
 
-    class Config:
-        """Pydantic config."""
-
-        env_prefix = "UNISPHERE_"
-        case_sensitive = False
+    model_config = ConfigDict(env_prefix="UNISPHERE_", case_sensitive=False)
 
 
 settings = Settings()

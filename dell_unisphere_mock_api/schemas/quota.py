@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class QuotaConfigSchema(BaseModel):
@@ -17,10 +17,8 @@ class QuotaConfigSchema(BaseModel):
     grace_period: int = Field(default=604800, description="Grace period in seconds (default 7 days)")
     state: str = Field(default="READY", description="Operational state of the quota configuration")
 
-    class Config:
-        """Pydantic model configuration."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "QuotaConfig_1",
                 "filesystem_id": "fs_1",
@@ -32,6 +30,7 @@ class QuotaConfigSchema(BaseModel):
                 "state": "READY",
             }
         }
+    )
 
 
 class TreeQuotaSchema(BaseModel):
@@ -48,10 +47,8 @@ class TreeQuotaSchema(BaseModel):
     size_used: int = Field(default=0, description="Current size used in bytes")
     percent_used: float = Field(default=0.0, description="Percentage of quota used")
 
-    class Config:
-        """Pydantic model configuration."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "TreeQuota_1",
                 "filesystem_id": "fs_1",
@@ -65,6 +62,7 @@ class TreeQuotaSchema(BaseModel):
                 "percent_used": 40.0,
             }
         }
+    )
 
 
 class UserQuotaSchema(BaseModel):
@@ -80,10 +78,8 @@ class UserQuotaSchema(BaseModel):
     size_used: int = Field(default=0, description="Current size used in bytes")
     percent_used: float = Field(default=0.0, description="Percentage of quota used")
 
-    class Config:
-        """Pydantic model configuration."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "UserQuota_1",
                 "filesystem_id": "fs_1",
@@ -96,3 +92,4 @@ class UserQuotaSchema(BaseModel):
                 "percent_used": 50.0,
             }
         }
+    )

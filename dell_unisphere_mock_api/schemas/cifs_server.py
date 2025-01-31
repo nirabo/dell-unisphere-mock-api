@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CIFSServerSchema(BaseModel):
@@ -20,10 +20,8 @@ class CIFSServerSchema(BaseModel):
     health_state: str = Field(default="OK", description="Health state of the CIFS server")
     state: str = Field(default="READY", description="Operational state of the CIFS server")
 
-    class Config:
-        """Pydantic model configuration."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "CIFSServer_1",
                 "name": "FileShare01",
@@ -38,3 +36,4 @@ class CIFSServerSchema(BaseModel):
                 "state": "READY",
             }
         }
+    )

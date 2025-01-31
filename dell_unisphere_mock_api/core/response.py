@@ -54,17 +54,16 @@ class UnityResponseFormatter:
         entry = Entry[T](base=base, content=item, links=entry_links, updated=current_time, metadata=None)
         return ApiResponse[T](base=base, updated=current_time, links=[], entries=[entry], total=1, metadata=None)
 
+    @staticmethod
     async def format_error(
-        self,
         error_code: int,
         http_status_code: int,
         messages: List[str],
-    ) -> Dict[str, Any]:
+    ) -> ErrorDetail:
         """Format an error response."""
-        error = ErrorDetail(
+        return ErrorDetail(
             error_code=error_code,
             http_status_code=http_status_code,
             messages=messages,
             created=datetime.now(timezone.utc),
         )
-        return error.model_dump(by_alias=True)

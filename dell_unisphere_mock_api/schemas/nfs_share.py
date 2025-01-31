@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NFSShareSchema(BaseModel):
@@ -21,22 +21,21 @@ class NFSShareSchema(BaseModel):
     state: str = Field(default="READY", description="Operational state of the NFS share")
     export_paths: List[str] = Field(default_factory=list, description="List of export paths")
 
-    class Config:
-        """Pydantic model configuration."""
-
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "NFSShare_1",
                 "name": "project_data",
                 "description": "Project data share",
                 "filesystem_id": "fs_1",
-                "path": "/exports/project_data",
+                "path": "/project_data",
                 "default_access": "READ_ONLY",
                 "root_squash_enabled": True,
                 "anonymous_uid": 65534,
                 "anonymous_gid": 65534,
                 "is_read_only": True,
                 "state": "READY",
-                "export_paths": ["/exports/project_data"],
+                "export_paths": ["/nfs/project_data"],
             }
         }
+    )

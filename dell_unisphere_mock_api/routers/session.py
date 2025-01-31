@@ -29,7 +29,7 @@ async def get_all_sessions(
 
 
 @router.get(
-    "/instances/loginSessionInfo/{session_id}",
+    "/types/loginSessionInfo/instances/{session_id}",
     response_model=ApiResponse[LoginSessionInfo],
     responses={200: {"description": "JSON representation of a specific loginSessionInfo instance"}},
 )
@@ -39,10 +39,7 @@ async def get_session(
     """Get details of a specific login session"""
     response.headers["Accept"] = "application/json"
     response.headers["Content-Type"] = "application/json"
-    session = await session_controller.get_session(session_id, request)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return session
+    return await session_controller.get_session(session_id, request)
 
 
 class LogoutRequest(BaseModel):

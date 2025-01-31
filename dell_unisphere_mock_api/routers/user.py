@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic
 from pydantic import BaseModel
 
-from dell_unisphere_mock_api.core.auth import get_current_user
+from dell_unisphere_mock_api.core.auth import get_current_user, verify_emc_rest_client
 from dell_unisphere_mock_api.core.response import UnityResponseFormatter
 from dell_unisphere_mock_api.core.response_models import ApiResponse, Link
 
@@ -30,7 +30,11 @@ security = HTTPBasic()
 
 
 @router.get("")
-async def get_users(request: Request, current_user: Dict[str, str] = Depends(get_current_user)) -> ApiResponse[User]:
+async def get_users(
+    request: Request,
+    current_user: Dict[str, str] = Depends(get_current_user),
+    _: bool = Depends(verify_emc_rest_client),
+) -> ApiResponse[User]:
     """Get all users."""
     users = []
     for user_id in ["admin"]:
@@ -47,12 +51,15 @@ async def get_users(request: Request, current_user: Dict[str, str] = Depends(get
         users.append(user)
 
     formatter = UnityResponseFormatter(request)
-    return formatter.format_collection(users)
+    return await formatter.format_collection(users)
 
 
 @router.get("/{user_id}")
 async def get_user(
-    user_id: str, request: Request, current_user: Dict[str, str] = Depends(get_current_user)
+    user_id: str,
+    request: Request,
+    current_user: Dict[str, str] = Depends(get_current_user),
+    _: bool = Depends(verify_emc_rest_client),
 ) -> ApiResponse[User]:
     """Get a specific user."""
     if user_id != "admin":
@@ -73,4 +80,4 @@ async def get_user(
     )
 
     formatter = UnityResponseFormatter(request)
-    return formatter.format_item(user)
+    return await formatter.format_item(user)
