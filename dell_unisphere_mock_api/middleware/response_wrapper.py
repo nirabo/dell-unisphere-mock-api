@@ -1,5 +1,6 @@
 import json
 import logging
+import traceback
 from datetime import datetime
 from typing import Callable
 
@@ -85,10 +86,24 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
                     response_data = response_data.model_dump(by_alias=True, exclude_none=True)
 
                 # Format as a collection response
-                formatted_response = await formatter.format_collection([response_data] if response_data else [])
-                content = json.dumps(
-                    formatted_response.model_dump(by_alias=True, exclude_none=True), default=json_serial
-                ).encode("utf-8")
+                # Log response_data before formatting
+                # Log response_data before formatting
+                logger.debug(f"response_data: {response_data}, type: {type(response_data)}")
+                try:
+                    formatted_response = await formatter.format_collection([response_data] if response_data else [])
+                except Exception as e:
+                    logger.error(f"Error in format_collection: {e}")
+                    logger.error(f"Traceback: {traceback.format_exc()}")
+                logger.debug(f"Formatted response type: {type(formatted_response)}")
+                logger.debug(f"Formatted response: {formatted_response}")
+
+                # Check if formatted_response has model_dump method
+                if hasattr(formatted_response, "model_dump"):
+                    response_model = formatted_response.model_dump(by_alias=True, exclude_none=True)
+                else:
+                    logger.error(f"Unexpected response format: {formatted_response}")
+                    response_model = {"errorCode": 500, "httpStatusCode": 500, "messages": ["Internal server error"]}
+                content = json.dumps(response_model, default=json_serial).encode("utf-8")
                 headers = dict(response.headers)
                 headers["content-length"] = str(len(content))
                 return Response(

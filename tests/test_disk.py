@@ -1,16 +1,17 @@
+import httpx
 import pytest
+import pytest_asyncio
 
+from dell_unisphere_mock_api.main import app
 from dell_unisphere_mock_api.schemas.disk import DiskTierEnum, DiskTypeEnum
 
 
-@pytest.fixture(autouse=True)
-def client(test_client):
-    return test_client
-
-
-def get_auth_headers():
-    """Helper function to get authentication headers."""
-    return {"Authorization": "Basic YWRtaW46c2VjcmV0"}  # admin:secret
+@pytest_asyncio.fixture
+async def async_test_client():
+    """Fixture to provide an async test client."""
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(base_url="http://testserver", transport=transport) as client:
+        yield client
 
 
 def verify_response_format(response_data):
@@ -29,7 +30,8 @@ def verify_response_format(response_data):
         assert "id" in response_data["entries"][0]["content"], "Response content missing id field"
 
 
-def test_create_disk(client, auth_headers):
+@pytest.mark.asyncio
+async def test_create_disk(async_test_client, auth_headers):
     """Test creating a new disk."""
     headers, _ = auth_headers  # Unpack the tuple
     disk_data = {
@@ -42,7 +44,7 @@ def test_create_disk(client, auth_headers):
         "firmware_version": "1.0.0",
     }
 
-    response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
+    response = await async_test_client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     assert response.status_code == 201
     data = response.json()
     verify_response_format(data)
@@ -52,7 +54,8 @@ def test_create_disk(client, auth_headers):
     assert content["tier_type"] == disk_data["tier_type"]
 
 
-def test_create_disk_invalid_type(client, auth_headers):
+@pytest.mark.asyncio
+async def test_create_disk_invalid_type(async_test_client, auth_headers):
     """Test creating a disk with invalid disk type."""
     headers, _ = auth_headers  # Unpack the tuple
     disk_data = {
@@ -63,13 +66,14 @@ def test_create_disk_invalid_type(client, auth_headers):
         "slot_number": 1,
     }
 
-    response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
+    response = await async_test_client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     assert response.status_code == 422
     data = response.json()
     verify_response_format(data)
 
 
-def test_get_disk(client, auth_headers):
+@pytest.mark.asyncio
+async def test_get_disk(async_test_client, auth_headers):
     """Test getting a specific disk."""
     headers, _ = auth_headers  # Unpack the tuple
     # First create a disk
@@ -80,14 +84,14 @@ def test_get_disk(client, auth_headers):
         "size": 1000000,
         "slot_number": 1,
     }
-    create_response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
+    create_response = await async_test_client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     assert create_response.status_code == 201
     created_data = create_response.json()
     verify_response_format(created_data)
     disk_id = created_data["entries"][0]["content"]["id"]
 
     # Get the disk
-    response = client.get(f"/api/types/disk/instances/{disk_id}", headers=headers)
+    response = await async_test_client.get(f"/api/types/disk/instances/{disk_id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     verify_response_format(data)
@@ -96,16 +100,18 @@ def test_get_disk(client, auth_headers):
     assert content["name"] == disk_data["name"]
 
 
-def test_list_disks(client, auth_headers):
+@pytest.mark.asyncio
+async def test_list_disks(async_test_client, auth_headers):
     """Test listing all disks."""
     headers, _ = auth_headers  # Unpack the tuple
-    response = client.get("/api/types/disk/instances", headers=headers)
+    response = await async_test_client.get("/api/types/disk/instances", headers=headers)
     assert response.status_code == 200
     data = response.json()
     verify_response_format(data)
 
 
-def test_update_disk(client, auth_headers):
+@pytest.mark.asyncio
+async def test_update_disk(async_test_client, auth_headers):
     """Test updating a disk."""
     headers, _ = auth_headers  # Unpack the tuple
     # First create a disk
@@ -116,7 +122,7 @@ def test_update_disk(client, auth_headers):
         "size": 1000000,
         "slot_number": 1,
     }
-    create_response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
+    create_response = await async_test_client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     assert create_response.status_code == 201
     created_data = create_response.json()
     verify_response_format(created_data)
@@ -127,7 +133,7 @@ def test_update_disk(client, auth_headers):
         "name": "updated_disk",
         "description": "Updated disk description",
     }
-    response = client.patch(f"/api/types/disk/instances/{disk_id}", json=update_data, headers=headers)
+    response = await async_test_client.patch(f"/api/types/disk/instances/{disk_id}", json=update_data, headers=headers)
     assert response.status_code == 200
     data = response.json()
     verify_response_format(data)
@@ -136,7 +142,8 @@ def test_update_disk(client, auth_headers):
     assert content["description"] == update_data["description"]
 
 
-def test_delete_disk(client, auth_headers):
+@pytest.mark.asyncio
+async def test_delete_disk(async_test_client, auth_headers):
     """Test deleting a disk."""
     headers, _ = auth_headers  # Unpack the tuple
     # First create a disk
@@ -147,24 +154,25 @@ def test_delete_disk(client, auth_headers):
         "size": 1000000,
         "slot_number": 1,
     }
-    create_response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
+    create_response = await async_test_client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     assert create_response.status_code == 201
     created_data = create_response.json()
     verify_response_format(created_data)
     disk_id = created_data["entries"][0]["content"]["id"]
 
     # Delete the disk
-    response = client.delete(f"/api/types/disk/instances/{disk_id}", headers=headers)
+    response = await async_test_client.delete(f"/api/types/disk/instances/{disk_id}", headers=headers)
     assert response.status_code == 204
 
     # Verify disk is deleted
-    get_response = client.get(f"/api/types/disk/instances/{disk_id}", headers=headers)
+    get_response = await async_test_client.get(f"/api/types/disk/instances/{disk_id}", headers=headers)
     assert get_response.status_code == 404
     error_data = get_response.json()
     verify_response_format(error_data)
 
 
-def test_get_disks_by_pool(client, auth_headers):
+@pytest.mark.asyncio
+async def test_get_disks_by_pool(async_test_client, auth_headers):
     """Test getting disks by pool ID."""
     headers, _ = auth_headers  # Unpack the tuple
     # First create a disk with a pool_id
@@ -176,14 +184,14 @@ def test_get_disks_by_pool(client, auth_headers):
         "slot_number": 1,
         "pool_id": "pool_1",
     }
-    create_response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
+    create_response = await async_test_client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     assert create_response.status_code == 201
     created_data = create_response.json()
     verify_response_format(created_data)
     pool_id = disk_data["pool_id"]
 
     # Get disks by pool
-    response = client.get(f"/api/types/disk/instances/byPool/{pool_id}", headers=headers)
+    response = await async_test_client.get(f"/api/types/disk/instances/byPool/{pool_id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     verify_response_format(data)
@@ -191,7 +199,8 @@ def test_get_disks_by_pool(client, auth_headers):
     assert content["pool_id"] == pool_id
 
 
-def test_get_disks_by_disk_group(client, auth_headers):
+@pytest.mark.asyncio
+async def test_get_disks_by_disk_group(async_test_client, auth_headers):
     """Test getting disks by disk group ID."""
     headers, _ = auth_headers  # Unpack the tuple
     # First create a disk with a disk_group_id
@@ -203,14 +212,14 @@ def test_get_disks_by_disk_group(client, auth_headers):
         "slot_number": 1,
         "disk_group_id": "group_1",
     }
-    create_response = client.post("/api/types/disk/instances", json=disk_data, headers=headers)
+    create_response = await async_test_client.post("/api/types/disk/instances", json=disk_data, headers=headers)
     assert create_response.status_code == 201
     created_data = create_response.json()
     verify_response_format(created_data)
     disk_group_id = disk_data["disk_group_id"]
 
     # Get disks by disk group
-    response = client.get(f"/api/types/disk/instances/byDiskGroup/{disk_group_id}", headers=headers)
+    response = await async_test_client.get(f"/api/types/disk/instances/byDiskGroup/{disk_group_id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     verify_response_format(data)

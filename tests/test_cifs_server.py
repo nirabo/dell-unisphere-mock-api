@@ -1,9 +1,8 @@
 """Tests for CIFS Server functionality."""
 
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import pytest
-from fastapi import Request
 from fastapi.testclient import TestClient
 from starlette.datastructures import URL
 

@@ -19,6 +19,9 @@ class DiskGroupModel:
             "disk_ids": disk_group.get("disk_ids", []),
             "pool_id": disk_group.get("pool_id", ""),
             "state": disk_group.get("state", "OK"),
+            "size_total": disk_group.get("size_total", 0),
+            "size_used": disk_group.get("size_used", 0),
+            "size_free": disk_group.get("size_free", 0),
         }
 
     def _format_response(self, disk_group: Optional[Union[dict, List[dict]]]) -> dict:
@@ -35,6 +38,7 @@ class DiskGroupModel:
 
     def create(self, disk_group: dict) -> dict:
         """Create a new disk group."""
+        print(f"Creating disk group with data: {disk_group}")
         disk_group_id = str(self.next_id)
         self.next_id += 1
 
@@ -45,6 +49,7 @@ class DiskGroupModel:
 
     def get(self, disk_group_id: str) -> dict:
         """Get a disk group by ID."""
+        print(f"Fetching disk group with ID: {disk_group_id}")
         disk_group = self.disk_groups.get(disk_group_id)
         if not disk_group:
             return {"entries": []}
@@ -52,23 +57,28 @@ class DiskGroupModel:
 
     def list(self) -> dict:
         """List all disk groups."""
+        print(f"Listing all disk groups: {list(self.disk_groups.values())}")
         return self._format_response(list(self.disk_groups.values()))
 
     def update(self, disk_group_id: str, disk_group_update: dict) -> dict:
         """Update a disk group."""
+        print(f"Updating disk group with ID: {disk_group_id}, data: {disk_group_update}")
         if disk_group_id in self.disk_groups:
             current_disk_group = self.disk_groups[disk_group_id]
             for key, value in disk_group_update.items():
                 if value is not None:
                     current_disk_group[key] = value
             return self._format_response(current_disk_group)
+        print(f"Disk group with ID {disk_group_id} not found.")
         return {"entries": []}
 
     def delete(self, disk_group_id: str) -> bool:
         """Delete a disk group."""
+        print(f"Deleting disk group with ID: {disk_group_id}")
         if disk_group_id in self.disk_groups:
             del self.disk_groups[disk_group_id]
             return True
+        print(f"Disk group with ID {disk_group_id} not found.")
         return False
 
     def validate_raid_config(self, raid_type: str, stripe_width: int, disk_count: int) -> bool:

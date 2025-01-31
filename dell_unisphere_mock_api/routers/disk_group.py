@@ -29,16 +29,18 @@ async def create_disk_group(
             detail="Invalid RAID configuration for the given stripe width and number of disks",
         )
     result = disk_group_model.create(disk_group.model_dump())
+    created_disk_group = DiskGroup(**result["entries"][0]["content"])
     formatter = UnityResponseFormatter(request)
-    return formatter.format_collection([result["entries"][0]["content"]])
+    return await formatter.format_collection([created_disk_group])
 
 
 @router.get("/types/diskGroup/instances")
 async def list_disk_groups(request: Request, current_user: dict = Depends(get_current_user)):
     """List all disk groups."""
     result = disk_group_model.list()
+    disk_groups = [DiskGroup(**entry["content"]) for entry in result["entries"]]
     formatter = UnityResponseFormatter(request)
-    return formatter.format_collection([entry["content"] for entry in result["entries"]])
+    return await formatter.format_collection(disk_groups)
 
 
 @router.get("/types/diskGroup/instances/{disk_group_id}")
@@ -47,8 +49,9 @@ async def get_disk_group(request: Request, disk_group_id: str, current_user: dic
     result = disk_group_model.get(disk_group_id)
     if not result["entries"]:
         raise HTTPException(status_code=404, detail="Disk group not found")
+    disk_group = DiskGroup(**result["entries"][0]["content"])
     formatter = UnityResponseFormatter(request)
-    return formatter.format_collection([result["entries"][0]["content"]])
+    return await formatter.format_collection([disk_group])
 
 
 @router.patch("/types/diskGroup/instances/{disk_group_id}")
@@ -62,8 +65,9 @@ async def update_disk_group(
     result = disk_group_model.update(disk_group_id, disk_group.model_dump(exclude_unset=True))
     if not result["entries"]:
         raise HTTPException(status_code=404, detail="Disk group not found")
+    updated_disk_group = DiskGroup(**result["entries"][0]["content"])
     formatter = UnityResponseFormatter(request)
-    return formatter.format_collection([result["entries"][0]["content"]])
+    return await formatter.format_collection([updated_disk_group])
 
 
 @router.delete("/types/diskGroup/instances/{disk_group_id}", status_code=status.HTTP_204_NO_CONTENT)
