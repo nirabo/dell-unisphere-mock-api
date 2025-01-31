@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -42,6 +43,8 @@ class Job(BaseModel):
     tasks: List[JobTask]
     progressPct: Optional[float] = None
     errorMessage: Optional[str] = None
+    created: datetime
+    modified: datetime
 
     model_config = ConfigDict(
         json_schema_extra={

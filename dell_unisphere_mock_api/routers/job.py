@@ -23,7 +23,7 @@ async def create_job(
     job = await controller.create_job(job_data)
     background_tasks.add_task(simulate_job_processing, job.id)
     formatter = UnityResponseFormatter(request)
-    return formatter.format_collection(
+    return await formatter.format_collection(
         [job], entry_links={0: [{"rel": "self", "href": f"/api/types/job/instances/{job.id}"}]}
     )
 
@@ -37,7 +37,7 @@ async def get_job(
     """Get the status of a job."""
     job = await controller.get_job(job_id)
     formatter = UnityResponseFormatter(request)
-    return formatter.format_collection(
+    return await formatter.format_collection(
         [job], entry_links={0: [{"rel": "self", "href": f"/api/types/job/instances/{job.id}"}]}
     )
 
@@ -50,7 +50,7 @@ async def list_jobs(
     """List all jobs."""
     jobs = await controller.list_jobs()
     formatter = UnityResponseFormatter(request)
-    return formatter.format_collection(
+    return await formatter.format_collection(
         jobs,
         entry_links={i: [{"rel": "self", "href": f"/api/types/job/instances/{job.id}"}] for i, job in enumerate(jobs)},
     )

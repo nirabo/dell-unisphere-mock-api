@@ -10,8 +10,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Skip CSRF check for GET/HEAD requests
-        if request.method in ["GET", "HEAD"]:
+        # Skip CSRF check for GET/HEAD requests and login endpoint
+        if request.method in ["GET", "HEAD"] or request.url.path == "/api/types/user/instances":
             return await call_next(request)
 
         # Check for CSRF token in headers

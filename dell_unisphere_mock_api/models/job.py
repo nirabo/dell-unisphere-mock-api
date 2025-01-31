@@ -17,7 +17,7 @@ class JobModel:
         job = Job(
             id=job_id,
             description=job_data.description,
-            state=JobState.QUEUED,
+            state=JobState.PENDING,
             tasks=job_data.tasks,
             created=now,
             modified=now,
