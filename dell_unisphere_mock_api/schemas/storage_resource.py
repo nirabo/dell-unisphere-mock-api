@@ -68,12 +68,18 @@ class StorageResourceUpdate(BaseModel):
 
 
 class StorageResourceResponse(StorageResourceBase):
+    """Response model for storage resources."""
+
     id: str = Field(..., description="Unique identifier of the storage resource")
     health: StorageResourceHealthEnum = Field(..., description="Health status of the storage resource")
     sizeTotal: int = Field(..., description="Total size in bytes")
     sizeUsed: int = Field(..., description="Used size in bytes")
     sizeAllocated: int = Field(..., description="Allocated size in bytes")
     thinStatus: ThinStatusEnum = Field(..., description="Thin provisioning status")
+    isCompressionEnabled: bool = Field(False, description="Whether compression is enabled")
+    isAdvancedDedupEnabled: bool = Field(False, description="Whether advanced deduplication is enabled")
+    tieringPolicy: Optional[TieringPolicyEnum] = Field(None, description="Storage tiering policy")
+    relocationPolicy: Optional[RelocationPolicyEnum] = Field(None, description="Data relocation policy")
     esxFilesystemMajorVersion: Optional[str] = Field(
         None, description="ESX filesystem major version for VMware resources"
     )
