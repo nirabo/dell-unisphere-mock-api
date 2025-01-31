@@ -12,12 +12,12 @@ class LUNController:
         self.lun_model = LUNModel()
         self.pool_controller = PoolController()
 
-    def create_lun(self, lun_create: LUNCreate, request: Request) -> ApiResponse[LUN]:
+    async def create_lun(self, lun_create: LUNCreate, request: Request) -> ApiResponse[LUN]:
         """Create a new LUN."""
         print(f"LUN controller: Creating LUN with pool_id: {lun_create.pool_id}")
         # Validate pool exists and has enough space
         print(f"LUN controller: Looking for pool with ID: {lun_create.pool_id}")
-        pool_response = self.pool_controller.get_pool(str(lun_create.pool_id), request)
+        pool_response = await self.pool_controller.get_pool(str(lun_create.pool_id), request)
         print(f"LUN controller: Found pool: {pool_response}")
         if not pool_response.entries:
             print(f"LUN controller: Pool not found with ID: {lun_create.pool_id}")
@@ -44,9 +44,9 @@ class LUNController:
         print(f"LUN controller: Created LUN: {result}")
 
         formatter = UnityResponseFormatter(request)
-        return formatter.format_collection([result], entry_links={0: [{"rel": "self", "href": f"/{result.id}"}]})
+        return await formatter.format_collection([result], entry_links={0: [{"rel": "self", "href": f"/{result.id}"}]})
 
-    def get_lun(self, lun_id: str, request: Request) -> ApiResponse[LUN]:
+    async def get_lun(self, lun_id: str, request: Request) -> ApiResponse[LUN]:
         """Get a LUN by ID."""
         print(f"LUN controller: Looking for LUN with ID: {lun_id}")
         lun = self.lun_model.get_lun(lun_id)
@@ -56,9 +56,9 @@ class LUNController:
         print(f"LUN controller: Found LUN: {lun}")
 
         formatter = UnityResponseFormatter(request)
-        return formatter.format_collection([lun], entry_links={0: [{"rel": "self", "href": f"/{lun_id}"}]})
+        return await formatter.format_collection([lun], entry_links={0: [{"rel": "self", "href": f"/{lun_id}"}]})
 
-    def get_lun_by_name(self, name: str, request: Request) -> ApiResponse[LUN]:
+    async def get_lun_by_name(self, name: str, request: Request) -> ApiResponse[LUN]:
         """Get a LUN by name."""
         print(f"LUN controller: Looking for LUN with name: {name}")
         lun = self.lun_model.get_lun_by_name(name)
@@ -68,9 +68,9 @@ class LUNController:
         print(f"LUN controller: Found LUN: {lun}")
 
         formatter = UnityResponseFormatter(request)
-        return formatter.format_collection([lun], entry_links={0: [{"rel": "self", "href": f"/{lun.id}"}]})
+        return await formatter.format_collection([lun], entry_links={0: [{"rel": "self", "href": f"/{lun.id}"}]})
 
-    def list_luns(self, request: Request) -> ApiResponse[LUN]:
+    async def list_luns(self, request: Request) -> ApiResponse[LUN]:
         """List all LUNs."""
         print("LUN controller: Listing all LUNs")
         luns = self.lun_model.list_luns()
@@ -78,9 +78,9 @@ class LUNController:
 
         formatter = UnityResponseFormatter(request)
         entry_links = {i: [{"rel": "self", "href": f"/{lun.id}"}] for i, lun in enumerate(luns)}
-        return formatter.format_collection(luns, entry_links=entry_links)
+        return await formatter.format_collection(luns, entry_links=entry_links)
 
-    def get_luns_by_pool(self, pool_id: str, request: Request) -> ApiResponse[LUN]:
+    async def get_luns_by_pool(self, pool_id: str, request: Request) -> ApiResponse[LUN]:
         """Get all LUNs in a pool."""
         print(f"LUN controller: Getting LUNs in pool with ID: {pool_id}")
         luns = self.lun_model.get_luns_by_pool(pool_id)
@@ -88,9 +88,9 @@ class LUNController:
 
         formatter = UnityResponseFormatter(request)
         entry_links = {i: [{"rel": "self", "href": f"/{lun.id}"}] for i, lun in enumerate(luns)}
-        return formatter.format_collection(luns, entry_links=entry_links)
+        return await formatter.format_collection(luns, entry_links=entry_links)
 
-    def update_lun(self, lun_id: str, lun_update: LUNUpdate, request: Request) -> ApiResponse[LUN]:
+    async def update_lun(self, lun_id: str, lun_update: LUNUpdate, request: Request) -> ApiResponse[LUN]:
         """Update a LUN."""
         print(f"LUN controller: Updating LUN with ID: {lun_id}")
         # Get existing LUN
@@ -112,9 +112,9 @@ class LUNController:
         print(f"LUN controller: Updated LUN: {result}")
 
         formatter = UnityResponseFormatter(request)
-        return formatter.format_collection([result], entry_links={0: [{"rel": "self", "href": f"/{lun_id}"}]})
+        return await formatter.format_collection([result], entry_links={0: [{"rel": "self", "href": f"/{lun_id}"}]})
 
-    def delete_lun(self, lun_id: str, request: Request) -> ApiResponse[None]:
+    async def delete_lun(self, lun_id: str, request: Request) -> ApiResponse[None]:
         """Delete a LUN."""
         print(f"LUN controller: Deleting LUN with ID: {lun_id}")
         if not self.lun_model.delete_lun(lun_id):
@@ -123,4 +123,4 @@ class LUNController:
         print(f"LUN controller: Deleted LUN with ID: {lun_id}")
 
         formatter = UnityResponseFormatter(request)
-        return formatter.format_collection([], entry_links={})
+        return await formatter.format_collection([], entry_links={})

@@ -20,9 +20,7 @@ class FilesystemController:
             filesystem = self.filesystem_model.create_filesystem(filesystem_data.model_dump())
             filesystem_response = FilesystemResponse.model_validate(filesystem)
             formatter = UnityResponseFormatter(request)
-            return formatter.format_response(
-                content=filesystem_response, resource_type="filesystem", resource_id=filesystem_response.id
-            )
+            return await formatter.format_collection([filesystem_response])
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
@@ -33,16 +31,14 @@ class FilesystemController:
 
         filesystem_response = FilesystemResponse.model_validate(filesystem)
         formatter = UnityResponseFormatter(request)
-        return formatter.format_response(
-            content=filesystem_response, resource_type="filesystem", resource_id=filesystem_response.id
-        )
+        return await formatter.format_collection([filesystem_response])
 
     async def list_filesystems(self, request: Request) -> ApiResponse:
         filesystems = self.filesystem_model.list_filesystems()
         filesystem_responses = [FilesystemResponse.model_validate(fs) for fs in filesystems]
 
         formatter = UnityResponseFormatter(request)
-        return formatter.format_collection(filesystem_responses)
+        return await formatter.format_collection(filesystem_responses)
 
     async def update_filesystem(
         self, request: Request, filesystem_id: str, update_data: FilesystemUpdate
@@ -63,9 +59,7 @@ class FilesystemController:
 
         filesystem_response = FilesystemResponse.model_validate(filesystem)
         formatter = UnityResponseFormatter(request)
-        return formatter.format_response(
-            content=filesystem_response, resource_type="filesystem", resource_id=filesystem_response.id
-        )
+        return await formatter.format_collection([filesystem_response])
 
     async def delete_filesystem(self, request: Request, filesystem_id: str) -> Optional[ApiResponse]:
         # Check if filesystem exists
@@ -88,9 +82,7 @@ class FilesystemController:
         filesystem = self.filesystem_model.get_filesystem(filesystem_id)
         filesystem_response = FilesystemResponse.model_validate(filesystem)
         formatter = UnityResponseFormatter(request)
-        return formatter.format_response(
-            content=filesystem_response, resource_type="filesystem", resource_id=filesystem_response.id
-        )
+        return await formatter.format_collection([filesystem_response])
 
     async def remove_share(self, request: Request, filesystem_id: str, share_id: str, share_type: str) -> ApiResponse:
         if not self.filesystem_model.remove_share(filesystem_id, share_id, share_type):
@@ -99,6 +91,4 @@ class FilesystemController:
         filesystem = self.filesystem_model.get_filesystem(filesystem_id)
         filesystem_response = FilesystemResponse.model_validate(filesystem)
         formatter = UnityResponseFormatter(request)
-        return formatter.format_response(
-            content=filesystem_response, resource_type="filesystem", resource_id=filesystem_response.id
-        )
+        return await formatter.format_collection([filesystem_response])

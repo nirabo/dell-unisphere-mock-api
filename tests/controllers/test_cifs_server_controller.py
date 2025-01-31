@@ -16,6 +16,12 @@ def cifs_server_controller():
 def mock_request():
     request = Mock(spec=Request)
     request.base_url = "http://test"
+
+    # Mock the URL object with path property
+    mock_url = Mock()
+    mock_url.path = "/api/types/cifsServer/instances"
+    request.url = mock_url
+
     return request
 
 
@@ -87,7 +93,7 @@ async def test_list_cifs_servers(cifs_server_controller, mock_request, sample_ci
 async def test_update_cifs_server(cifs_server_controller, mock_request, sample_cifs_server_data):
     # First create a CIFS server
     cifs_server_data = CIFSServerCreate(**sample_cifs_server_data)
-    created = cifs_server_controller.create_cifs_server(mock_request, cifs_server_data)
+    created = await cifs_server_controller.create_cifs_server(mock_request, cifs_server_data)
     created_dict = created.model_dump()
     cifs_server_id = created_dict["entries"][0]["content"]["id"]
 
@@ -95,7 +101,7 @@ async def test_update_cifs_server(cifs_server_controller, mock_request, sample_c
     update_data = CIFSServerUpdate(
         description="Updated description", domain_name="updated.domain", workgroup="NEWGROUP"
     )
-    response = cifs_server_controller.update_cifs_server(mock_request, cifs_server_id, update_data)
+    response = await cifs_server_controller.update_cifs_server(mock_request, cifs_server_id, update_data)
     response_dict = response.model_dump()
     assert len(response_dict["entries"]) == 1
     content = response_dict["entries"][0]["content"]
@@ -125,20 +131,23 @@ async def test_delete_cifs_server(cifs_server_controller, mock_request, sample_c
     assert exc_info.value.status_code == 404
 
 
-def test_get_nonexistent_cifs_server(cifs_server_controller, mock_request):
+@pytest.mark.asyncio
+async def test_get_nonexistent_cifs_server(cifs_server_controller, mock_request):
     with pytest.raises(HTTPException) as exc_info:
-        cifs_server_controller.get_cifs_server(mock_request, "nonexistent-id")
+        await cifs_server_controller.get_cifs_server(mock_request, "nonexistent-id")
     assert exc_info.value.status_code == 404
 
 
-def test_update_nonexistent_cifs_server(cifs_server_controller, mock_request):
+@pytest.mark.asyncio
+async def test_update_nonexistent_cifs_server(cifs_server_controller, mock_request):
     update_data = CIFSServerUpdate(name="updated_server")
     with pytest.raises(HTTPException) as exc_info:
-        cifs_server_controller.update_cifs_server(mock_request, "nonexistent-id", update_data)
+        await cifs_server_controller.update_cifs_server(mock_request, "nonexistent-id", update_data)
     assert exc_info.value.status_code == 404
 
 
-def test_delete_nonexistent_cifs_server(cifs_server_controller, mock_request):
+@pytest.mark.asyncio
+async def test_delete_nonexistent_cifs_server(cifs_server_controller, mock_request):
     with pytest.raises(HTTPException) as exc_info:
-        cifs_server_controller.delete_cifs_server(mock_request, "nonexistent-id")
+        await cifs_server_controller.delete_cifs_server(mock_request, "nonexistent-id")
     assert exc_info.value.status_code == 404

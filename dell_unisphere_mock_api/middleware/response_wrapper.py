@@ -1,11 +1,12 @@
 import json
 import logging
+import traceback
 from datetime import datetime
 from typing import Callable
 
-from fastapi import HTTPException, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 from starlette.types import ASGIApp
 
 from dell_unisphere_mock_api.core.response import UnityResponseFormatter
@@ -28,101 +29,115 @@ class ResponseWrapperMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
 
-            # Only wrap JSON responses
-            content_type = response.headers.get("content-type", "")
-            if not ("application/json" in content_type or isinstance(response, JSONResponse)):
-                logger.debug(f"Not a JSON response (content-type: {content_type}), skipping")
+            # Skip OpenAPI endpoints
+            if request.url.path.startswith("/docs") or request.url.path.startswith("/openapi.json"):
                 return response
 
+            # Get response body
+            response_body = b""
+            async for chunk in response.body_iterator:
+                response_body += chunk
+
+            # Parse JSON
             try:
-                # Get response body
-                response_body = b""
-                async for chunk in response.body_iterator:
-                    response_body += chunk
-
-                # Parse JSON
+                # Try to decode as UTF-8 first
                 try:
-                    # Try to decode as UTF-8 first
-                    try:
-                        response_body_str = response_body.decode("utf-8")
-                    except UnicodeDecodeError:
-                        # If UTF-8 fails, try to decode as latin1
-                        response_body_str = response_body.decode("latin1")
+                    response_body_str = response_body.decode("utf-8")
+                except UnicodeDecodeError:
+                    # If UTF-8 fails, try to decode as latin1
+                    response_body_str = response_body.decode("latin1")
 
-                    data = json.loads(response_body_str)
-                    logger.debug(f"Response data: {data}")
-                except json.JSONDecodeError:
-                    # If we can't decode the response body, return it as is
+                response_data = json.loads(response_body_str) if response_body_str else {}
+
+                # Check if response is already an ApiResponse (has entries field) or ErrorDetail (has errorCode field)
+                if isinstance(response_data, dict) and ("entries" in response_data or "errorCode" in response_data):
+                    # Response is already formatted, return as-is
+                    content = json.dumps(response_data, default=json_serial).encode("utf-8")
+                    headers = dict(response.headers)
+                    headers["content-length"] = str(len(content))
                     return Response(
-                        content=response_body,
+                        content=content,
                         status_code=response.status_code,
-                        headers=dict(response.headers),
-                        media_type=response.media_type,
-                    )
-
-                # Don't wrap responses that are already in our format
-                if isinstance(data, dict) and ("@base" in data or "errorCode" in data):
-                    logger.debug("Response already wrapped or is an error response, skipping")
-                    return Response(
-                        content=response_body,
-                        status_code=response.status_code,
-                        headers=dict(response.headers),
-                        media_type=response.media_type,
-                    )
-
-                # Create response wrapper
-                formatter = UnityResponseFormatter(request)
-
-                # If response is an error, format it as an error response
-                if response.status_code >= 400:
-                    error_response = formatter.format_error(
-                        HTTPException(status_code=response.status_code, detail=data.get("detail", str(data)))
-                    )
-                    return Response(
-                        content=json.dumps(error_response.model_dump(by_alias=True), default=json_serial),
-                        status_code=response.status_code,
-                        headers=dict(response.headers),
+                        headers=headers,
                         media_type="application/json",
                     )
 
-                # Otherwise wrap as a normal response
-                if isinstance(data, list):
-                    wrapped = formatter.format_collection(data)
-                else:
-                    wrapped = formatter.format_collection([data])
+                # Format response
+                formatter = UnityResponseFormatter(request)
+                if response.status_code >= 400:
+                    # format_error is a static method
+                    error_response = await UnityResponseFormatter.format_error(
+                        error_code=response.status_code,
+                        http_status_code=response.status_code,
+                        messages=[str(response_data.get("detail", "Unknown error"))],
+                    )
+                    content = json.dumps(error_response.model_dump(by_alias=True), default=json_serial).encode("utf-8")
+                    headers = dict(response.headers)
+                    headers["content-length"] = str(len(content))
+                    return Response(
+                        content=content,
+                        status_code=response.status_code,
+                        headers=headers,
+                        media_type="application/json",
+                    )
 
-                logger.debug(f"Wrapped response: {wrapped}")
+                # For success cases, wrap the response in ApiResponse format if it's not already
+                if hasattr(response_data, "model_dump"):
+                    response_data = response_data.model_dump(by_alias=True, exclude_none=True)
 
-                # Convert to JSON with custom serializer for datetime
-                wrapped_json = json.dumps(wrapped.model_dump(by_alias=True), default=json_serial)
+                # Format as a collection response
+                try:
+                    # If response_data is already a list, use it directly
+                    if isinstance(response_data, list):
+                        formatted_response = await formatter.format_collection(response_data)
+                    # If response_data is a dict and has 'entries', it's already formatted
+                    elif isinstance(response_data, dict) and "entries" in response_data:
+                        content = json.dumps(response_data).encode("utf-8")
+                        headers = dict(response.headers)
+                        headers["content-length"] = str(len(content))
+                        return Response(
+                            content=content,
+                            status_code=response.status_code,
+                            headers=headers,
+                            media_type="application/json",
+                        )
+                    # Otherwise, wrap it in a list
+                    else:
+                        formatted_response = await formatter.format_collection([response_data] if response_data else [])
+
+                    response_model = formatted_response.model_dump(by_alias=True, exclude_none=True)
+                except Exception as e:
+                    logger.error(f"Error in format_collection: {e}")
+                    logger.error(f"Traceback: {traceback.format_exc()}")
+                    response_model = {"errorCode": 500, "httpStatusCode": 500, "messages": [str(e)]}
+                content = json.dumps(response_model, default=json_serial).encode("utf-8")
+                headers = dict(response.headers)
+                headers["content-length"] = str(len(content))
                 return Response(
-                    content=wrapped_json,
+                    content=content,
                     status_code=response.status_code,
-                    headers=dict(response.headers),
+                    headers=headers,
                     media_type="application/json",
                 )
-            except Exception as e:
-                logger.error(f"Error wrapping response: {e}")
-                return response
 
-        except HTTPException as http_exc:
-            # Handle HTTP exceptions (e.g., 404, 400, etc.)
-            formatter = UnityResponseFormatter(request)
-            error_response = formatter.format_error(http_exc)
+            except json.JSONDecodeError:
+                # If response is not JSON, return it as-is
+                return Response(
+                    content=response_body,
+                    status_code=response.status_code,
+                    headers=response.headers,
+                    media_type=response.media_type,
+                )
+        except Exception as e:
+            logger.error(f"Error in middleware: {e}")
             return Response(
-                content=json.dumps(error_response.model_dump(by_alias=True), default=json_serial),
-                status_code=http_exc.status_code,
-                headers={"content-type": "application/json"},
-                media_type="application/json",
-            )
-        except Exception as exc:
-            # Handle unexpected errors
-            logger.exception("Unexpected error in middleware")
-            formatter = UnityResponseFormatter(request)
-            error_response = formatter.format_error(exc)
-            return Response(
-                content=json.dumps(error_response.model_dump(by_alias=True), default=json_serial),
                 status_code=500,
-                headers={"content-type": "application/json"},
+                content=json.dumps(
+                    {
+                        "errorCode": 500,
+                        "httpStatusCode": 500,
+                        "messages": [str(e)],
+                    }
+                ).encode("utf-8"),
                 media_type="application/json",
             )

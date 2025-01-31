@@ -15,7 +15,7 @@ session_controller = SessionController()
 
 
 @router.get(
-    "/api/types/loginSessionInfo/instances",
+    "/types/loginSessionInfo/instances",
     response_model=ApiResponse[LoginSessionInfo],
     responses={200: {"description": "JSON representation of all members of the loginSessionInfo collection"}},
 )
@@ -25,11 +25,11 @@ async def get_all_sessions(
     """Get all active login sessions"""
     response.headers["Accept"] = "application/json"
     response.headers["Content-Type"] = "application/json"
-    return session_controller.get_all_sessions(request)
+    return await session_controller.get_all_sessions(request)
 
 
 @router.get(
-    "/api/instances/loginSessionInfo/{session_id}",
+    "/types/loginSessionInfo/instances/{session_id}",
     response_model=ApiResponse[LoginSessionInfo],
     responses={200: {"description": "JSON representation of a specific loginSessionInfo instance"}},
 )
@@ -39,10 +39,7 @@ async def get_session(
     """Get details of a specific login session"""
     response.headers["Accept"] = "application/json"
     response.headers["Content-Type"] = "application/json"
-    session = session_controller.get_session(session_id, request)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return session
+    return await session_controller.get_session(session_id, request)
 
 
 class LogoutRequest(BaseModel):
@@ -52,20 +49,14 @@ class LogoutRequest(BaseModel):
 
 
 @router.post(
-    "/api/types/loginSessionInfo/action/logout",
-    response_model=LogoutResponse,
-    responses={200: {"description": "JSON representation of the returned attributes"}},
+    "/instances/loginSessionInfo/action/logout",
+    response_model=ApiResponse[LogoutResponse],
+    responses={200: {"description": "JSON representation of the logout response"}},
 )
 async def logout_session(
-    request: LogoutRequest, response: Response, credentials: HTTPBasicCredentials = Depends(get_current_user)
-) -> LogoutResponse:
+    request: Request, response: Response, credentials: HTTPBasicCredentials = Depends(get_current_user)
+) -> ApiResponse[LogoutResponse]:
     """Logout from a session or all sessions"""
     response.headers["Accept"] = "application/json"
     response.headers["Content-Type"] = "application/json"
-
-    try:
-        return session_controller.logout(credentials["username"], request.localCleanupOnly)
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return await session_controller.logout(credentials.username)

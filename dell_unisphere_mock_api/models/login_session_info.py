@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class User(BaseModel):
@@ -13,6 +13,10 @@ class User(BaseModel):
     password_change_required: bool = False
     domain: str = "Local"
 
+    model_config = ConfigDict(
+        populate_by_name=True, json_schema_extra={"json_encoders": {datetime: lambda v: v.isoformat()}}
+    )
+
 
 class Role(BaseModel):
     """Role resource model"""
@@ -20,6 +24,10 @@ class Role(BaseModel):
     id: str
     name: str
     description: Optional[str] = None
+
+    model_config = ConfigDict(
+        populate_by_name=True, json_schema_extra={"json_encoders": {datetime: lambda v: v.isoformat()}}
+    )
 
 
 class LoginSessionInfo(BaseModel):
@@ -29,6 +37,10 @@ class LoginSessionInfo(BaseModel):
     domain: str
     user: User
     roles: List[Role]
-    idleTimeout: int = Field(default=3600, description="Session timeout in seconds")
-    isPasswordChangeRequired: bool = Field(default=False, description="Whether password change is required")
-    last_activity: datetime = Field(default_factory=datetime.utcnow)
+    idleTimeout: int
+    isPasswordChangeRequired: bool
+    last_activity: datetime
+
+    model_config = ConfigDict(
+        populate_by_name=True, json_schema_extra={"json_encoders": {datetime: lambda v: v.isoformat()}}
+    )

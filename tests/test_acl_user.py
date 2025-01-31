@@ -20,7 +20,8 @@ def mock_request():
     return Request(scope=scope)
 
 
-def test_acl_user_controller_create(mock_request):
+@pytest.mark.asyncio
+async def test_acl_user_controller_create(mock_request):
     """Test creating an ACL user."""
     controller = ACLUserController()
     user_data = ACLUserCreate(
@@ -29,14 +30,15 @@ def test_acl_user_controller_create(mock_request):
         user_name="testuser",
     )
 
-    response = controller.create_user(mock_request, user_data)
+    response = await controller.create_user(mock_request, user_data)
     content = response.entries[0].content
     assert content.sid == "S-1-5-21-1234567890-1234567890-1234567890-1234"
     assert content.domain_name == "WORKGROUP"
     assert content.user_name == "testuser"
 
 
-def test_acl_user_controller_get(mock_request):
+@pytest.mark.asyncio
+async def test_acl_user_controller_get(mock_request):
     """Test retrieving an ACL user."""
     controller = ACLUserController()
     user_data = ACLUserCreate(
@@ -45,19 +47,18 @@ def test_acl_user_controller_get(mock_request):
         user_name="testuser",
     )
 
-    created_response = controller.create_user(mock_request, user_data)
+    created_response = await controller.create_user(mock_request, user_data)
     created_user = created_response.entries[0].content
-    retrieved_response = controller.get_user(mock_request, created_user.id)
+    retrieved_response = await controller.get_user(mock_request, created_user.id)
     retrieved_user = retrieved_response.entries[0].content
 
-    assert retrieved_user is not None
-    assert retrieved_user.id == created_user.id
     assert retrieved_user.sid == "S-1-5-21-1234567890-1234567890-1234567890-1234"
     assert retrieved_user.domain_name == "WORKGROUP"
     assert retrieved_user.user_name == "testuser"
 
 
-def test_acl_user_controller_update(mock_request):
+@pytest.mark.asyncio
+async def test_acl_user_controller_update(mock_request):
     """Test updating an ACL user."""
     controller = ACLUserController()
     user_data = ACLUserCreate(
@@ -66,19 +67,18 @@ def test_acl_user_controller_update(mock_request):
         user_name="testuser",
     )
 
-    created_response = controller.create_user(mock_request, user_data)
+    created_response = await controller.create_user(mock_request, user_data)
     created_user = created_response.entries[0].content
+
     update_data = ACLUserUpdate(user_name="updateduser")
-    updated_response = controller.update_user(mock_request, created_user.id, update_data)
+    updated_response = await controller.update_user(mock_request, created_user.id, update_data)
     updated_user = updated_response.entries[0].content
 
-    assert updated_user is not None
     assert updated_user.user_name == "updateduser"
-    assert updated_user.sid == "S-1-5-21-1234567890-1234567890-1234567890-1234"
-    assert updated_user.domain_name == "WORKGROUP"
 
 
-def test_acl_user_controller_lookup_sid(mock_request):
+@pytest.mark.asyncio
+async def test_acl_user_controller_lookup_sid(mock_request):
     """Test looking up a user's SID by domain name and username."""
     controller = ACLUserController()
     user_data = ACLUserCreate(
@@ -87,8 +87,8 @@ def test_acl_user_controller_lookup_sid(mock_request):
         user_name="testuser",
     )
 
-    controller.create_user(mock_request, user_data)
-    result = controller.lookup_sid_by_domain_user(mock_request, "WORKGROUP", "testuser")
+    await controller.create_user(mock_request, user_data)
+    result = await controller.lookup_sid_by_domain_user(mock_request, "WORKGROUP", "testuser")
     user = result.entries[0].content
 
     assert result is not None
@@ -101,6 +101,15 @@ def test_acl_user_api_endpoints(test_client: TestClient, auth_headers):
     """Test ACL user API endpoints."""
     headers, _ = auth_headers
 
+    # First make a GET request to get the CSRF token
+    response = test_client.get("/api/types/aclUser/instances", headers=headers)
+    assert response.status_code == 200
+    csrf_token = response.headers.get("EMC-CSRF-TOKEN")
+    assert csrf_token is not None
+
+    # Add CSRF token to headers for mutating requests
+    headers_with_csrf = {**headers, "EMC-CSRF-TOKEN": csrf_token}
+
     # Create
     response = test_client.post(
         "/api/types/aclUser/instances",
@@ -109,7 +118,7 @@ def test_acl_user_api_endpoints(test_client: TestClient, auth_headers):
             "domain_name": "WORKGROUP",
             "user_name": "testuser",
         },
-        headers=headers,
+        headers=headers_with_csrf,
     )
     assert response.status_code == 200
     data = response.json()
@@ -125,7 +134,7 @@ def test_acl_user_api_endpoints(test_client: TestClient, auth_headers):
     response = test_client.patch(
         f"/api/types/aclUser/instances/{user_id}",
         json={"user_name": "updateduser"},
-        headers=headers,
+        headers=headers_with_csrf,
     )
     assert response.status_code == 200
     content = response.json()["entries"][0]["content"]

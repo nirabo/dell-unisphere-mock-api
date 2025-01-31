@@ -19,6 +19,7 @@ class CIFSServerCreate(CIFSServerBase):
 
 
 class CIFSServerUpdate(BaseModel):
+    name: Optional[str] = None
     description: Optional[str] = None
     domain_name: Optional[str] = None
     workgroup: Optional[str] = None

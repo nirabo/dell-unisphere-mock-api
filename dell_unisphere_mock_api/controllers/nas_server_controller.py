@@ -21,6 +21,7 @@ class NasServerController:
                 "updated": datetime.utcnow(),
                 "links": [Link(rel="self", href=f"{base_url}/api/types/nasServer/instances")],
                 "entries": entries,
+                "total": len(entries),
             }
         )
 

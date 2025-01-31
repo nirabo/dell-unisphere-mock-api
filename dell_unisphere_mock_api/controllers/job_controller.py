@@ -3,7 +3,7 @@ from typing import List
 from fastapi import HTTPException, status
 
 from dell_unisphere_mock_api.models.job import JobModel
-from dell_unisphere_mock_api.schemas.job import Job, JobCreate
+from dell_unisphere_mock_api.schemas.job import Job, JobCreate, JobState
 
 
 class JobController:
@@ -31,6 +31,14 @@ class JobController:
     async def delete_job(self, job_id: str) -> None:
         """Delete a job."""
         if not await self.model.delete_job(job_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job not found",
+            )
+
+    async def update_job_state(self, job_id: str, state: JobState) -> None:
+        """Update the state of a job."""
+        if not await self.model.update_job_state(job_id, state):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Job not found",

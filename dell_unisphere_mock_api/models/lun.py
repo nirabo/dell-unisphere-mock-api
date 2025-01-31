@@ -44,26 +44,33 @@ class LUNModel:
         lun_dict = lun_create.model_dump()
         logging.debug(f"LUN model: Initial LUN data: {lun_dict}")
 
+        # Generate new ID
+        lun_id = str(len(self.luns) + 1)
+        lun_dict["id"] = lun_id
         lun_dict["pool_id"] = str(lun_dict["pool_id"])  # Ensure pool_id is string
         lun_dict["wwn"] = self._generate_wwn()
         lun_dict["health"] = self._create_default_health()
         lun_dict["currentNode"] = lun_dict.get("defaultNode", 0)
         lun_dict["sizeAllocated"] = 0  # Initially no space allocated for thin provisioning
-        lun_dict["id"] = str(uuid4())  # Explicitly set ID
 
-        logging.debug(f"LUN model: Final LUN data: {lun_dict}")
-        # Create LUN instance
-        new_lun = LUN(**lun_dict)
-        self.luns[new_lun.id] = new_lun
-        logging.debug(f"LUN model: Stored LUN. Available LUNs: {list(self.luns.keys())}")
-        return new_lun
+        # Create LUN object
+        lun = LUN(**lun_dict)
+        logging.debug(f"LUN model: Created LUN object: {lun}")
+
+        # Store in dictionary
+        self.luns[lun_id] = lun
+        logging.debug(f"LUN model: Stored LUN with ID {lun_id}")
+
+        return lun
 
     def get_lun(self, lun_id: str) -> Optional[LUN]:
         """Get a LUN by ID."""
+        logging.debug(f"LUN model: Getting LUN with ID: {lun_id}")
         return self.luns.get(lun_id)
 
     def get_lun_by_name(self, name: str) -> Optional[LUN]:
         """Get a LUN by name."""
+        logging.debug(f"LUN model: Getting LUN with name: {name}")
         for lun in self.luns.values():
             if lun.name == name:
                 return lun
@@ -71,31 +78,36 @@ class LUNModel:
 
     def list_luns(self) -> List[LUN]:
         """List all LUNs."""
+        logging.debug("LUN model: Listing all LUNs")
         return list(self.luns.values())
 
     def get_luns_by_pool(self, pool_id: str) -> List[LUN]:
         """Get all LUNs in a pool."""
-        return [lun for lun in self.luns.values() if str(lun.pool_id) == pool_id]
+        logging.debug(f"LUN model: Getting LUNs in pool with ID: {pool_id}")
+        return [lun for lun in self.luns.values() if str(lun.pool_id) == str(pool_id)]
 
     def update_lun(self, lun_id: str, lun_update: LUNUpdate) -> Optional[LUN]:
         """Update a LUN."""
+        logging.debug(f"LUN model: Updating LUN with ID: {lun_id}")
         if lun_id not in self.luns:
             return None
 
         current_lun = self.luns[lun_id]
         update_data = lun_update.model_dump(exclude_unset=True)
 
-        # Create updated LUN dict while preserving the id
-        updated_lun_dict = current_lun.model_dump()
-        updated_lun_dict.update(update_data)
+        # Update fields
+        updated_dict = current_lun.model_dump()
+        updated_dict.update(update_data)
 
-        # Create new LUN instance
-        updated_lun = LUN(**updated_lun_dict)
+        # Create new LUN object with updated data
+        updated_lun = LUN(**updated_dict)
         self.luns[lun_id] = updated_lun
+
         return updated_lun
 
     def delete_lun(self, lun_id: str) -> bool:
-        """Delete a LUN by ID."""
+        """Delete a LUN."""
+        logging.debug(f"LUN model: Deleting LUN with ID: {lun_id}")
         if lun_id in self.luns:
             del self.luns[lun_id]
             return True

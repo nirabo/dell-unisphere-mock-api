@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class BasicSystemInfo(BaseModel):
@@ -12,15 +12,16 @@ class BasicSystemInfo(BaseModel):
     apiVersion: str
     earliestApiVersion: str
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "0",
                 "model": "Unity 450F",
                 "name": "MyStorageSystem",
                 "softwareVersion": "5.2.0",
-                "softwareFullVersion": "5.2.0.0.5.123",
+                "softwareFullVersion": "5.2.0.0.0.0",
                 "apiVersion": "5.2",
-                "earliestApiVersion": "4.0",
+                "earliestApiVersion": "5.0",
             }
         }
+    )

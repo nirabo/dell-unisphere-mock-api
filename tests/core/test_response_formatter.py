@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List, Optional
 
 import pytest
-from fastapi import HTTPException, Request
+from fastapi import HTTPException
 from pydantic import BaseModel
 
 from dell_unisphere_mock_api.core.response import UnityResponseFormatter

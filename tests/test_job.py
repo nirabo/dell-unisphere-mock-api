@@ -1,33 +1,19 @@
 import base64
-from datetime import datetime
 
+import httpx
 import pytest
-from fastapi.testclient import TestClient
+import pytest_asyncio
 
 from dell_unisphere_mock_api.main import app
 from dell_unisphere_mock_api.schemas.job import JobCreate, JobTask
 
-client = TestClient(app)
 
-
-@pytest.fixture
-def auth_headers():
-    credentials = base64.b64encode(b"admin:Password123!").decode("utf-8")
-    auth_header = f"Basic {credentials}"
-
-    # Login to get CSRF token
-    response = client.post(
-        "/api/auth",
-        headers={"X-EMC-REST-CLIENT": "true", "Authorization": auth_header},
-    )
-    csrf_token = response.headers.get("EMC-CSRF-TOKEN")
-    cookies = response.cookies
-
-    return {
-        "X-EMC-REST-CLIENT": "true",
-        "Authorization": auth_header,
-        "EMC-CSRF-TOKEN": csrf_token,
-    }, cookies
+@pytest_asyncio.fixture
+async def async_test_client():
+    """Fixture to provide an async test client."""
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(base_url="http://testserver", transport=transport) as client:
+        yield client
 
 
 @pytest.fixture
@@ -45,75 +31,90 @@ def sample_job_data():
     )
 
 
-def test_create_job(sample_job_data, auth_headers):
-    headers, cookies = auth_headers
-    response = client.post(
+@pytest.mark.asyncio
+async def test_create_job(async_test_client, sample_job_data, auth_headers):
+    headers_with_csrf, _ = auth_headers
+    response = await async_test_client.post(
         "/api/types/job/instances",
         json=sample_job_data.model_dump(),
-        headers=headers,
-        cookies=cookies,
+        headers=headers_with_csrf,
     )
     assert response.status_code == 202
-    assert "id" in response.json()
+    assert "entries" in response.json()
+    assert "id" in response.json()["entries"][0]["content"]
 
 
-def test_get_job(sample_job_data, auth_headers):
-    headers, cookies = auth_headers
-    create_response = client.post(
+@pytest.mark.asyncio
+async def test_get_job(async_test_client, sample_job_data, auth_headers):
+    headers_with_csrf, headers_without_csrf = auth_headers
+    create_response = await async_test_client.post(
         "/api/types/job/instances",
         json=sample_job_data.model_dump(),
-        headers=headers,
-        cookies=cookies,
+        headers=headers_with_csrf,
     )
-    job_id = create_response.json()["id"]
+    job_id = create_response.json()["entries"][0]["content"]["id"]
 
-    response = client.get(
+    response = await async_test_client.get(
         f"/api/types/job/instances/{job_id}",
-        headers=headers,
-        cookies=cookies,
+        headers=headers_without_csrf,
     )
     assert response.status_code == 200
-    assert response.json()["id"] == job_id
+    assert response.json()["entries"][0]["content"]["id"] == job_id
 
 
-def test_list_jobs(sample_job_data, auth_headers):
-    headers, cookies = auth_headers
-    client.post(
+@pytest.mark.asyncio
+async def test_list_jobs(async_test_client, sample_job_data, auth_headers):
+    headers_with_csrf, headers_without_csrf = auth_headers
+    # Create a job first
+    create_response = await async_test_client.post(
         "/api/types/job/instances",
         json=sample_job_data.model_dump(),
-        headers=headers,
-        cookies=cookies,
+        headers=headers_with_csrf,
     )
+    assert create_response.status_code == 202
+    job_id = create_response.json()["entries"][0]["content"]["id"]
 
-    response = client.get(
+    # List jobs
+    response = await async_test_client.get(
         "/api/types/job/instances",
-        headers=headers,
-        cookies=cookies,
+        headers=headers_without_csrf,
     )
     assert response.status_code == 200
-    assert len(response.json()["entries"]) > 0
+    assert "@base" in response.json()
+    assert "entries" in response.json()
+    assert len(response.json()["entries"]) >= 1
+    assert any(entry["content"]["id"] == job_id for entry in response.json()["entries"])
 
 
-def test_delete_job(sample_job_data, auth_headers):
-    headers, cookies = auth_headers
-    create_response = client.post(
+@pytest.mark.asyncio
+async def test_delete_job(async_test_client, sample_job_data, auth_headers):
+    headers_with_csrf, headers_without_csrf = auth_headers
+    create_response = await async_test_client.post(
         "/api/types/job/instances",
         json=sample_job_data.model_dump(),
-        headers=headers,
-        cookies=cookies,
+        headers=headers_with_csrf,
     )
-    job_id = create_response.json()["id"]
+    assert create_response.status_code == 202
+    job_id = create_response.json()["entries"][0]["content"]["id"]
 
-    response = client.delete(
+    # Get the job
+    get_response = await async_test_client.get(
         f"/api/types/job/instances/{job_id}",
-        headers=headers,
-        cookies=cookies,
+        headers=headers_without_csrf,
     )
-    assert response.status_code == 204
+    assert get_response.status_code == 200
+    assert get_response.json()["entries"][0]["content"]["id"] == job_id
 
-    get_response = client.get(
+    # Delete the job
+    delete_response = await async_test_client.delete(
         f"/api/types/job/instances/{job_id}",
-        headers=headers,
-        cookies=cookies,
+        headers=headers_with_csrf,
+    )
+    assert delete_response.status_code == 204
+
+    # Verify job is deleted
+    get_response = await async_test_client.get(
+        f"/api/types/job/instances/{job_id}",
+        headers=headers_without_csrf,
     )
     assert get_response.status_code == 404
