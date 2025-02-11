@@ -1,56 +1,4 @@
-"""Response headers middleware for Dell Unity API compatibility.
-
-This middleware handles session management and response headers to ensure compatibility
-with the Dell Unity REST API specification. It manages:
-
-1. Session Management:
-   - Creates new sessions when Basic Auth credentials are provided
-   - Validates and retrieves existing sessions from cookies
-   - Sets session cookies in responses with proper security attributes
-   - Maintains session state using the singleton SessionController
-
-2. Cookie Management:
-   - Sets 'mod_sec_emc' cookie with session information
-   - Format: value3&1&value1&session_id&value2&csrf_token
-   - Security attributes: HttpOnly, Secure, SameSite=Strict
-   - Expiry based on session idle timeout
-
-3. CSRF Protection:
-   - Generates and validates CSRF tokens
-   - Requires EMC-CSRF-TOKEN header for mutating requests
-   - Token is tied to session ID for security
-
-4. Response Headers:
-   - Sets Dell Unity specific headers
-   - Handles caching directives
-   - Sets security headers
-   - Manages content type and language
-
-Authentication Flow:
-1. Client sends request
-2. Middleware checks for existing session cookie
-3. If cookie exists:
-   - Extracts session ID
-   - Validates session via SessionController
-   - If valid, request proceeds
-   - If invalid, falls back to Basic Auth
-4. If Basic Auth present:
-   - Creates new session
-   - Sets session cookie
-5. If no valid auth, request fails with 401
-
-Example Usage:
-```python
-app = FastAPI()
-app.add_middleware(ResponseHeaderMiddleware)
-
-# Protected route using session auth
-@app.get("/api/types/user/instances")
-async def get_users():
-    # Will only reach here if session is valid
-    return {"users": [...]}
-```
-"""
+"""Response headers middleware for Dell Unity API compatibility."""
 
 import base64
 import logging
@@ -58,13 +6,16 @@ import secrets
 from datetime import timedelta
 from typing import Callable, Optional
 
-from fastapi import Request, Response
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 from starlette.types import ASGIApp
 
 from dell_unisphere_mock_api.controllers.session_controller import SessionController
+from dell_unisphere_mock_api.core.response_models import create_error_response
 from dell_unisphere_mock_api.models.login_session_info import LoginSessionInfo
 
+logger = logging.getLogger(__name__)
 
 class ResponseHeaderMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: ASGIApp):
@@ -108,13 +59,16 @@ class ResponseHeaderMiddleware(BaseHTTPMiddleware):
                     return session
             # If session is invalid and there's no basic auth, return 401
             elif "Authorization" not in request.headers:
+                error_response = create_error_response(
+                    error_code=401,
+                    http_status_code=401,
+                    messages=["Session expired or invalid"]
+                )
                 return Response(
                     status_code=401,
-                    content=(
-                        '{"errorCode": 401, "httpStatusCode": 401, ' '"messages": ["Session expired or invalid"]}'
-                    ),
+                    content=error_response.model_dump_json(by_alias=True),
                     media_type="application/json",
-                    headers={"Set-Cookie": "mod_sec_emc=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Strict"},
+                    headers={"Set-Cookie": "mod_sec_emc=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Strict"}
                 )
 
         # Create new session if basic auth is present
@@ -129,9 +83,9 @@ class ResponseHeaderMiddleware(BaseHTTPMiddleware):
                     if session:
                         return session
                 except (base64.binascii.Error, UnicodeDecodeError) as e:
-                    logging.warning(f"Invalid base64 in basic auth header: {e}")
+                    logger.warning(f"Invalid base64 in basic auth header: {e}")
                 except ValueError as e:
-                    logging.warning(f"Invalid basic auth format (missing colon): {e}")
+                    logger.warning(f"Invalid basic auth format (missing colon): {e}")
 
         return None
 
@@ -146,22 +100,29 @@ class ResponseHeaderMiddleware(BaseHTTPMiddleware):
         if session and request.method in ["POST", "PATCH", "DELETE"]:
             csrf_token = request.headers.get("EMC-CSRF-TOKEN")
             if not csrf_token:
+                error_response = create_error_response(
+                    error_code=401,
+                    http_status_code=401,
+                    messages=["EMC-CSRF-TOKEN header is required"]
+                )
                 return Response(
                     status_code=401,
-                    content=(
-                        '{"errorCode": 401, "httpStatusCode": 401, '
-                        '"messages": ["EMC-CSRF-TOKEN header is required"]}'
-                    ),
-                    media_type="application/json",
+                    content=error_response.model_dump_json(by_alias=True),
+                    media_type="application/json"
                 )
 
             # Validate that the token matches
             stored_token = self._csrf_tokens.get(session.id)
             if not stored_token or stored_token != csrf_token:
+                error_response = create_error_response(
+                    error_code=401,
+                    http_status_code=401,
+                    messages=["Invalid EMC-CSRF-TOKEN"]
+                )
                 return Response(
                     status_code=401,
-                    content=('{"errorCode": 401, "httpStatusCode": 401, ' '"messages": ["Invalid EMC-CSRF-TOKEN"]}'),
-                    media_type="application/json",
+                    content=error_response.model_dump_json(by_alias=True),
+                    media_type="application/json"
                 )
 
         response = await call_next(request)
@@ -171,7 +132,6 @@ class ResponseHeaderMiddleware(BaseHTTPMiddleware):
             csrf_token = self._get_csrf_token(session.id)
 
             # Generate secure cookie value (mocking Dell Unity's format)
-            # Use the session ID from the session object
             cookie_value = f"value3&1&value1&{session.id}&value2&{secrets.token_hex(32)}"
 
             # Set required headers

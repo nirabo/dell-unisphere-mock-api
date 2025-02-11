@@ -5,7 +5,7 @@ import logging.config
 import os
 from datetime import datetime, timezone
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, routing
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -84,56 +84,132 @@ def custom_openapi():
         return _openapi_schema
 
     try:
-        # Get the original schema by calling the original function bound to our app instance
-        logger.debug("Getting original OpenAPI schema...")
-        openapi_schema = original_openapi.__get__(app, FastAPI)()
-        logger.debug(f"Original schema: {openapi_schema}")
-
-        # Add security schemes
-        logger.debug("Adding security schemes...")
-        if "components" not in openapi_schema:
-            openapi_schema["components"] = {}
-        openapi_schema["components"]["securitySchemes"] = {
-            "basicAuth": {
-                "type": "http",
-                "scheme": "basic",
-                "description": "Basic authentication with X-EMC-REST-CLIENT header",
+        paths = {}
+        tags = []
+        components = {
+            "securitySchemes": {
+                "basicAuth": {
+                    "type": "http",
+                    "scheme": "basic",
+                    "description": "Basic authentication with X-EMC-REST-CLIENT header",
+                },
+                "emcRestClient": {
+                    "type": "apiKey",
+                    "in": "header",
+                    "name": "X-EMC-REST-CLIENT",
+                    "description": "Required header for all requests",
+                },
+                "emcCsrfToken": {
+                    "type": "apiKey",
+                    "in": "header",
+                    "name": "EMC-CSRF-TOKEN",
+                    "description": (
+                        "Required header for POST, PATCH and DELETE requests. "
+                        "Obtained from any GET request response headers."
+                    ),
+                },
             },
-            "emcRestClient": {
-                "type": "apiKey",
-                "in": "header",
-                "name": "X-EMC-REST-CLIENT",
-                "description": "Required header for all requests",
-            },
-            "emcCsrfToken": {
-                "type": "apiKey",
-                "in": "header",
-                "name": "EMC-CSRF-TOKEN",
-                "description": (
-                    "Required header for POST, PATCH and DELETE requests. "
-                    "Obtained from any GET request response headers."
-                ),
-            },
+            "schemas": {},
         }
 
-        # Apply security schemes to all paths
-        logger.debug("Applying security schemes to paths...")
-        for path, path_item in openapi_schema["paths"].items():
-            logger.debug(f"Processing path: {path}")
-            # Add basic security to all operations
-            for method, operation in path_item.items():
-                if method.upper() != "GET":  # Skip security for GET requests
-                    logger.debug(f"Adding security to {method.upper()} {path}")
-                    operation["security"] = [
-                        {"basicAuth": []},
-                        {"emcRestClient": []},
-                    ]
-                    # Add CSRF token requirement for POST, PATCH, DELETE methods
-                    if method.upper() in ["POST", "PATCH", "DELETE"]:
-                        operation["security"].append({"emcCsrfToken": []})
+        # Group routes by their tags
+        logger.debug(f"Total routes: {len(app.routes)}")
+        for route in app.routes:
+            logger.debug(f"Processing route: {route}")
+            logger.debug(f"Route type: {type(route)}")
+            logger.debug(f"Route path: {route.path if hasattr(route, 'path') else 'No path'}")
+
+            if not isinstance(route, routing.APIRoute):
+                logger.debug(f"Skipping non-APIRoute: {route}")
+                continue
+
+            logger.debug(f"Processing API route: {route.path}")
+
+            # Get route info
+            path = route.path
+
+            # Extract path parameters from the route
+            path_params = []
+            for param in route.dependant.path_params:
+                path_params.append({"name": param.name, "in": "path", "required": True, "schema": {"type": "string"}})
+
+            # Get route tags from the route
+            route_tags = route.tags if route.tags else []
+            logger.debug(f"Route tags: {route_tags}")
+
+            # Add tags if they don't exist
+            for tag in route_tags:
+                if not any(t.get("name") == tag for t in tags):
+                    tags.append({"name": tag})
+
+            # Get request body schema if it exists
+            request_body = None
+            if route.body_field:
+                model = route.body_field.type_
+                model_name = model.__name__
+                logger.debug(f"Request body model: {model_name}")
+                if model_name not in components["schemas"]:
+                    components["schemas"][model_name] = {"type": "object", "properties": {}}
+                request_body = {
+                    "content": {"application/json": {"schema": {"$ref": f"#/components/schemas/{model_name}"}}}
+                }
+
+            # Create operation object
+            operation = {
+                "tags": route_tags,
+                "summary": route.summary if route.summary else "",
+                "description": route.description if route.description else "",
+                "operationId": route.operation_id if route.operation_id else route.name,
+                "parameters": path_params,
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ApiResponse"}}},
+                    }
+                },
+            }
+
+            if request_body:
+                operation["requestBody"] = request_body
+
+            # Add security requirements for non-GET methods
+            if route.methods and "GET" not in route.methods:
+                operation["security"] = [
+                    {"basicAuth": []},
+                    {"emcRestClient": []},
+                ]
+                if any(method in route.methods for method in ["POST", "PATCH", "DELETE"]):
+                    operation["security"].append({"emcCsrfToken": []})
+
+            # Add path and method to paths
+            if path not in paths:
+                paths[path] = {}
+
+            for method in route.methods:
+                logger.debug(f"Adding method {method} for path {path}")
+                paths[path][method.lower()] = operation
+
+        # Add ApiResponse schema
+        components["schemas"]["ApiResponse"] = {
+            "type": "object",
+            "properties": {"content": {"type": "array", "items": {"type": "object", "additionalProperties": True}}},
+        }
+
+        openapi_schema = {
+            "openapi": "3.0.2",
+            "info": {
+                "title": "Dell Unisphere Mock API",
+                "version": get_version(),
+                "description": "Mock API for Dell Unisphere",
+            },
+            "paths": paths,
+            "tags": tags,
+            "components": components,
+        }
 
         _openapi_schema = openapi_schema
         logger.debug("OpenAPI schema generation complete")
+        logger.debug(f"Final paths: {paths}")
         return _openapi_schema
     except Exception as e:
         logger.exception(f"Error generating OpenAPI schema: {e}")

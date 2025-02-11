@@ -12,25 +12,25 @@ router = APIRouter(prefix="/types/nfsShare", tags=["NFS Share"])
 controller = NFSShareController()
 
 
-@router.post("/instances", response_model=ApiResponse)
+@router.post("/instances", response_model=ApiResponse, operation_id="create_nfs_share_instance")
 async def create_nfs_share(request: Request, nfs_share: NFSShareCreate, _: str = Depends(get_current_user)):
     response = controller.create_nfs_share(request, nfs_share)
     return response.model_dump(by_alias=True)
 
 
-@router.get("/instances", response_model=ApiResponse)
+@router.get("/instances", response_model=ApiResponse, operation_id="list_nfs_share_instances")
 async def list_nfs_shares(request: Request, _: str = Depends(get_current_user)):
     response = controller.list_nfs_shares(request)
     return response.model_dump(by_alias=True)
 
 
-@router.get("/instances/{share_id}", response_model=ApiResponse)
+@router.get("/instances/{share_id}", response_model=ApiResponse, operation_id="get_nfs_share_instance")
 async def get_nfs_share(request: Request, share_id: str, _: str = Depends(get_current_user)):
     response = controller.get_nfs_share(request, share_id)
     return response.model_dump(by_alias=True)
 
 
-@router.put("/instances/{share_id}", response_model=ApiResponse)
+@router.put("/instances/{share_id}", response_model=ApiResponse, operation_id="update_nfs_share_instance")
 async def update_nfs_share(
     request: Request, share_id: str, update_data: NFSShareUpdate, _: str = Depends(get_current_user)
 ):
@@ -38,7 +38,7 @@ async def update_nfs_share(
     return response.model_dump(by_alias=True)
 
 
-@router.delete("/instances/{share_id}", response_model=ApiResponse)
+@router.delete("/instances/{share_id}", response_model=ApiResponse, operation_id="delete_nfs_share_instance")
 async def delete_nfs_share(request: Request, share_id: str, _: str = Depends(get_current_user)):
     success = controller.delete_nfs_share(request, share_id)
     if not success:

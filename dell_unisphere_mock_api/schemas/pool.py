@@ -244,6 +244,9 @@ class Pool(BaseModel):
     isAllFlash: bool
 
     model_config = ConfigDict(
+        json_encoders={
+            datetime: lambda v: v.isoformat()
+        },
         json_schema_extra={
             "example": {
                 "id": "pool_123",
